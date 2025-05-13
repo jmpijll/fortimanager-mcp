@@ -15,7 +15,7 @@ To expose FortiManager API functionalities as a suite of intuitive MCP tools. Th
 
 *   **Python**: 3.10+ (as recommended for FastMCP)
 *   **FastMCP**: The core library for building and running the MCP server.
-*   **pyfmg**: The Python library used to interact with the FortiManager JSON RPC API.
+*   **requests**: Used for direct HTTP/JSON-RPC communication with the FortiManager API (no third-party FortiManager library required).
 *   **python-dotenv**: For managing environment variables and keeping your credentials secure.
 
 ## 📂 Directory Structure
@@ -297,11 +297,6 @@ Encountering issues? Here are a few common things to check:
 *   **Python Dependencies**:
     *   Did `pip install -r requirements.txt` complete without errors?
     *   Are you in the correct Python virtual environment?
-*   **`pyfmg` Library**:
-    *   The server relies on `pyfmg`. If you suspect issues with it, ensure it's installed correctly. The error messages from `tools/fortimanager_tools.py` might give clues.
-*   **SSL Verification (`FORTIMANAGER_VERIFY_SSL`)**:
-    *   If `FORTIMANAGER_VERIFY_SSL="true"`, ensure your FortiManager has a valid SSL certificate trusted by the machine running the server.
-    *   If using a self-signed certificate, set `FORTIMANAGER_VERIFY_SSL="false"` for testing/development, but be aware of the security implications.
 *   **FastMCP Server Logs**:
     *   When you run `fastmcp dev main.py` or `python main.py`, check the terminal output for any error messages from FastMCP or the tools themselves.
 *   **Tool Errors**:
@@ -314,7 +309,7 @@ This project follows up-to-date Python and API best practices:
 - **Explicit type hints** are used for all tool parameters and return values, enabling automatic schema generation and better LLM integration.
 - **Parameter validation** is performed using `Annotated` and `pydantic.Field` ([FastMCP docs](https://github.com/jlowin/fastmcp/blob/main/docs/servers/tools.mdx#_snippet_2)), ensuring clear, validated input for all tools.
 - **Error handling**: Instead of returning error strings, tools now raise exceptions (e.g., `ValueError`, `RuntimeError`). FastMCP automatically converts these to structured error responses for clients ([see FastMCP error handling](https://github.com/jlowin/fastmcp/blob/main/docs/servers/tools.mdx#_snippet_9)).
-- **API usage**: All FortiManager API calls are made using the [pyfmg](https://github.com/context-labs/pyfmg) library, following its latest documentation and best practices.
+- **API usage**: All FortiManager API calls are made using a minimal, robust JSON-RPC client built on the `requests` library, following official Fortinet documentation and best practices. No third-party FortiManager Python library is required.
 
 ## ⚡️ Parameter Validation & Error Handling
 
@@ -336,7 +331,7 @@ If a required parameter is missing or invalid, or if an API call fails, the tool
 
 ## 📚 References
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
-- [pyfmg Documentation](https://github.com/context-labs/pyfmg)
+- [FortiManager JSON-RPC API Documentation](https://docs.fortinet.com/document/fortimanager/7.4.0/)
 - [Guide to writing a good README](https://abhiappmobiledeveloper.medium.com/guide-to-writing-on-readme-md-markdown-file-for-github-project-8aad4e4e2a15) @Web
 
 ## 🐞 Known Issues
