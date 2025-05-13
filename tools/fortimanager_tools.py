@@ -239,6 +239,45 @@ def list_policy_packages(adom: str = "root"):
     except Exception as e:
         return f"Exception listing policy packages: {e}"
 
+# @mcp.tool()
+def get_device_details(device_name: str, adom: str = "root"):
+    """
+    Retrieves detailed information for a specific device in FortiManager.
+    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
+    Device name is required. ADOM defaults to 'root' if not provided.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+    
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # API endpoint to get specific device details.
+        # Example: /dvmdb/adom/{adom}/device/{device_name}
+        # The exact fields returned will depend on the FortiManager API version and device type.
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name}"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            # The device details are usually within the 'data' field of the response.
+            # It could be a single object or a list with one object if the API supports filtering.
+            # For a direct get by name, it's typically a single object.
+            return response_data.get("data", response_data) 
+        elif code == 0 and not response_data: # Should ideally not happen if device exists
+            return f"No details found for device '{device_name}' in ADOM '{adom}'. It might not exist or the response was empty."
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            # Specific error code for "Object not found" might be -3 for some Fortinet APIs.
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
+                 return f"Error: Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving details for device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving device details for '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -254,6 +293,22 @@ if __name__ == '__main__':
         print("\n--- Get System Status ---")
         status = get_system_status()
         print(status)
+
+        # Test list_policy_packages
+        print("\n--- List Policy Packages (ADOM: root) ---")
+        packages = list_policy_packages(adom="root")
+        print(packages)
+
+        # Test get_device_details - replace 'YOUR_DEVICE_NAME' with an actual device name
+        # print("\n--- Get Device Details (ADOM: root, Device: YOUR_DEVICE_NAME) ---")
+        # if isinstance(devices, list) and len(devices) > 0 and isinstance(devices[0], dict) and 'name' in devices[0]:
+        #     test_device_name = devices[0]['name'] # Use the first device found for testing
+        #     print(f"Testing with device: {test_device_name}")
+        #     details = get_device_details(device_name=test_device_name, adom="root")
+        #     print(details)
+        # else:
+        #     print("Skipping get_device_details test as no device name could be determined automatically.")
+        #     print("Please manually provide a device_name to test get_device_details.")
         
     except ValueError as ve:
         print(f"Configuration Error: {ve}")

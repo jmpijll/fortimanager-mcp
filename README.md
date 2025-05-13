@@ -140,6 +140,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `adom` (string, optional, default: "root") - The Administrative Domain to query.
     *   **Returns**: A list of policy package details or an error message.
 
+4.  **`get_fortimanager_device_details`**
+    *   **Description**: Retrieves detailed information for a specific device in FortiManager. Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file. Device name is required. ADOM defaults to 'root' if not provided.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: Detailed information for the specified device or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -148,7 +153,6 @@ This project is just getting started! Here are some ideas for future development
 
 *   **More Tools!**
     *   **Device Management:**
-        *   `get_device_details`: Retrieve detailed information for a specific device (serial number, firmware, connection status, HA status, platform).
         *   `get_device_config_status`: Check configuration synchronization status.
         *   `retrieve_device_config_from_device`: Trigger FortiManager to fetch the latest config from a device.
         *   `list_device_interfaces`: List network interfaces for a device with basic status/config.
