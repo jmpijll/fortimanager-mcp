@@ -135,6 +135,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: None.
     *   **Returns**: System status information or an error message.
 
+3.  **`list_fortimanager_policy_packages`**
+    *   **Description**: Lists policy packages in FortiManager for a specific ADOM. Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file. ADOM defaults to 'root' if not provided.
+    *   **Parameters**: `adom` (string, optional, default: "root") - The Administrative Domain to query.
+    *   **Returns**: A list of policy package details or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements

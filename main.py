@@ -46,6 +46,10 @@ def list_devices_wrapper(adom: str = "root"):
 def get_system_status_wrapper():
     return fmg_tools.get_system_status()
 
+@mcp.tool(name="list_fortimanager_policy_packages", description=fmg_tools.list_policy_packages.__doc__)
+def list_policy_packages_wrapper(adom: str = "root"):
+    return fmg_tools.list_policy_packages(adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

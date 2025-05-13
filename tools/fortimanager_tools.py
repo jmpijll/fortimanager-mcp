@@ -65,7 +65,7 @@
 
 import os
 from dotenv import load_dotenv
-from fortimanager_api import FortiManagerAPI  # Official library name to be confirmed
+from pyfmg import FortiManager as FortiManagerAPI # Use pyfmg
 import urllib3
 
 # Assuming 'fastmcp' instance is passed or imported if @mcp.tool decorator is used from main.py
@@ -84,13 +84,11 @@ def initialize_fmg_api_client():
         return fmg_client
 
     fmg_host = os.getenv("FORTIMANAGER_HOST")
-    fmg_api_key = os.getenv("FORTIMANAGER_API_KEY")
+    fmg_api_key_val = os.getenv("FORTIMANAGER_API_KEY") # Renamed to avoid clash
 
-    if not fmg_host or not fmg_api_key:
+    if not fmg_host or not fmg_api_key_val:
         raise ValueError("FORTIMANAGER_HOST and FORTIMANAGER_API_KEY must be set in .env file.")
 
-    # Disable InsecureRequestWarning if SSL verification is off
-    # This is common for lab/dev environments. In production, use proper SSL certs.
     verify_ssl_env = os.getenv("FORTIMANAGER_VERIFY_SSL", "false").lower()
     verify_ssl = verify_ssl_env == "true"
     
@@ -98,24 +96,25 @@ def initialize_fmg_api_client():
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     try:
-        # Assuming the library uses 'api_key' for token authentication
-        # and has parameters like 'use_ssl' and 'verify_ssl'.
-        # These are common but need to be confirmed with python-fortimanagerapi docs.
         fmg_client = FortiManagerAPI(
             host=fmg_host,
-            api_key=fmg_api_key,
-            use_ssl=True, # Assuming HTTPS is preferred
-            verify_ssl=verify_ssl, # Set to True in production with proper certs
-            timeout=10 # Default timeout
+            apikey=fmg_api_key_val, # Use 'apikey' as per pyfmg documentation
+            use_ssl=True, 
+            verify_ssl=verify_ssl, 
+            timeout=10,
+            debug=False # pyfmg supports a debug flag, default is False
         )
-        # Some libraries might require an explicit login call even with an API key
-        # e.g., fmg_client.login() or fmg_client.login_with_apikey(fmg_api_key)
-        # For now, assuming constructor handles it or it's not needed for API key auth.
-        print(f"Successfully initialized FortiManager API client for host: {fmg_host}")
+        # pyfmg documentation indicates login() is still called, even with apikey, to set up session.
+        # "Notice that login() is still called and still must be used, despite that there really is no initial login. 
+        # This is so the session can be created and maintained and ensures a consistent interface."
+        # However, the pyfmg context manager example does: `with FortiManager('10.1.1.1', apikey=api_key) as fmg_instance:`
+        # which implies login might be handled by constructor or context. Let's assume constructor handles session creation for now.
+        # If errors occur, we might need to add an explicit fmg_client.login() call here.
+
+        print(f"Successfully initialized FortiManager API client for host: {fmg_host} using pyfmg.")
         return fmg_client
     except Exception as e:
-        print(f"Error initializing FortiManager API client: {e}")
-        # Potentially re-raise or handle more gracefully
+        print(f"Error initializing FortiManager API client with pyfmg: {e}")
         raise
 
 # Ensure client is initialized before tool use (call this explicitly or ensure mcp handles it)
@@ -198,10 +197,52 @@ def get_system_status():
     except Exception as e:
         return f"Exception getting system status: {e}"
 
+# @mcp.tool() # Decorate with FastMCP's tool decorator
+def list_policy_packages(adom: str = "root"):
+    """
+    Lists policy packages in FortiManager for a specific ADOM.
+    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
+    ADOM defaults to 'root' if not provided.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    try:
+        # URL based on FortiManager API documentation (e.g., section 9.2.2)
+        # /pm/pkg/adom/{adom_name} or similar might be the direct path for listing packages.
+        # Some API versions might use /pm/pkg/adom/{adom_name}/package
+        # We will use the common one found in documentation for listing within an ADOM.
+        api_url = f"/pm/pkg/adom/{adom}"
+        
+        # pyfmg's get method typically returns (code, data)
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            # The actual list of packages is often in a nested 'data' field, 
+            # or could be the top-level list if 'data' field is not present but result is a list.
+            # Or it might be under response_data['data']['pkg_list'] or similar. 
+            # We will try to be a bit flexible here.
+            if isinstance(response_data.get("data"), list):
+                return response_data["data"] # if response is {"data": [...packages...]}
+            elif isinstance(response_data, list):
+                return response_data # if response is [...packages...]
+            else:
+                # Fallback or more specific extraction if needed based on actual API response structure
+                return response_data.get("data", response_data) 
+        elif code == 0 and not response_data:
+            return [] # No packages or empty response
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            return f"Error listing policy packages: {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception listing policy packages: {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
-        print("Attempting to initialize client and fetch data...")
+        print("Attempting to initialize client and fetch data using pyfmg...")
         # Ensure .env file has FORTIMANAGER_HOST and FORTIMANAGER_API_KEY
         
         # Test list_devices
