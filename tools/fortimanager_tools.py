@@ -105,13 +105,16 @@ def initialize_fmg_api_client():
             debug=False # pyfmg supports a debug flag, default is False
         )
         # pyfmg documentation indicates login() is still called, even with apikey, to set up session.
-        # "Notice that login() is still called and still must be used, despite that there really is no initial login. 
-        # This is so the session can be created and maintained and ensures a consistent interface."
-        # However, the pyfmg context manager example does: `with FortiManager('10.1.1.1', apikey=api_key) as fmg_instance:`
-        # which implies login might be handled by constructor or context. Let's assume constructor handles session creation for now.
-        # If errors occur, we might need to add an explicit fmg_client.login() call here.
+        code, _ = fmg_client.login() # Explicitly call login for session setup
+        if code != 0:
+            # Attempt to get more details from the response if login failed
+            # The second element of the tuple from login() might contain error details
+            # but pyfmg documentation is not explicit on its structure for a failed login() with apikey.
+            # We'll assume it's a dict-like object similar to other calls for now.
+            # If fmg_client.login() itself raises an exception on failure, this might not be reached.
+            raise Exception(f"FortiManager API client login failed with code: {code}. Check API key and connectivity.")
 
-        print(f"Successfully initialized FortiManager API client for host: {fmg_host} using pyfmg.")
+        print(f"Successfully initialized and logged into FortiManager API client for host: {fmg_host} using pyfmg.")
         return fmg_client
     except Exception as e:
         print(f"Error initializing FortiManager API client with pyfmg: {e}")
@@ -120,7 +123,7 @@ def initialize_fmg_api_client():
 # Ensure client is initialized before tool use (call this explicitly or ensure mcp handles it)
 # initialize_fmg_api_client() 
 
-# @mcp.tool() # Decorate with FastMCP's tool decorator
+@mcp.tool() # Decorate with FastMCP's tool decorator
 def list_devices(adom: str = "root"):
     """
     Lists devices in FortiManager, optionally filtered by ADOM.
@@ -168,7 +171,7 @@ def list_devices(adom: str = "root"):
     except Exception as e:
         return f"Exception listing devices: {e}"
 
-# @mcp.tool() # Decorate with FastMCP's tool decorator
+@mcp.tool() # Decorate with FastMCP's tool decorator
 def get_system_status():
     """
     Retrieves the system status from FortiManager.
@@ -197,7 +200,7 @@ def get_system_status():
     except Exception as e:
         return f"Exception getting system status: {e}"
 
-# @mcp.tool() # Decorate with FastMCP's tool decorator
+@mcp.tool() # Decorate with FastMCP's tool decorator
 def list_policy_packages(adom: str = "root"):
     """
     Lists policy packages in FortiManager for a specific ADOM.
@@ -239,7 +242,7 @@ def list_policy_packages(adom: str = "root"):
     except Exception as e:
         return f"Exception listing policy packages: {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_device_details(device_name: str, adom: str = "root"):
     """
     Retrieves detailed information for a specific device in FortiManager.
@@ -278,7 +281,7 @@ def get_device_details(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving device details for '{device_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_device_config_status(device_name: str, adom: str = "root"):
     """
     Retrieves the configuration synchronization status for a specific device.
@@ -332,7 +335,7 @@ def get_device_config_status(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving config status for '{device_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
     """
     Triggers FortiManager to retrieve the latest configuration from a specified device.
@@ -399,7 +402,7 @@ def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception initiating config retrieval for '{device_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_device_interfaces(device_name: str, adom: str = "root"):
     """
     Lists network interfaces for a specific device in FortiManager.
@@ -449,7 +452,7 @@ def list_device_interfaces(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving interfaces for '{device_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_device_routing_table(device_name: str, adom: str = "root"):
     """
     Retrieves the routing table for a specific device in FortiManager.
@@ -511,7 +514,7 @@ def get_device_routing_table(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving routing table for '{device_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_policy_package_details(package_name: str, adom: str = "root"):
     """
     Retrieves detailed information for a specific policy package in an ADOM.
@@ -554,7 +557,7 @@ def get_policy_package_details(package_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving details for policy package '{package_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_firewall_policies(package_name: str, adom: str = "root"):
     """
     Lists firewall policies within a specific policy package in an ADOM.
@@ -606,7 +609,7 @@ def list_firewall_policies(package_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception listing firewall policies for package '{package_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_firewall_policy_details(policy_id: str, package_name: str, adom: str = "root"):
     """
     Retrieves detailed configuration for a specific firewall policy by its ID.
@@ -651,7 +654,7 @@ def get_firewall_policy_details(policy_id: str, package_name: str, adom: str = "
     except Exception as e:
         return f"Exception retrieving details for firewall policy ID '{policy_id}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_firewall_objects(object_type: str, adom: str = "root"):
     """
     Lists firewall objects of a specified type within an ADOM.
@@ -709,7 +712,7 @@ def list_firewall_objects(object_type: str, adom: str = "root"):
     except Exception as e:
         return f"Exception listing objects of type '{object_type}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_firewall_object_details(object_name: str, object_type: str, adom: str = "root"):
     """
     Retrieves details for a specific firewall object by its name and type.
@@ -752,7 +755,7 @@ def get_firewall_object_details(object_name: str, object_type: str, adom: str = 
     except Exception as e:
         return f"Exception retrieving details for object '{object_name}' (type '{object_type}'): {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def query_firewall_policies(
     package_name: str,
     adom: str = "root", 
@@ -793,12 +796,8 @@ def query_firewall_policies(
         filters.append(["status", "==", status.lower()])
     if policy_name_contains:
         # FortiManager API might use 'like' or a regex operator for contains.
-        # For simplicity, using '==' with wildcard assumption or a specific 'contains' operator if available.
-        # A common pattern is using a wildcard that the API interprets, e.g. *value* or %value%.
-        # Here, we'll use a field name `name` and assume the API supports partial match or we use `==` for exact name if no partial match built-in.
-        # For a true "contains", the API might require a specific syntax or operator like "~~" or "like".
-        # Let's use a simple filter for name for now; this part is highly API dependent for true 'contains'.
-        filters.append(["name", "==", f"*{policy_name_contains}*"]) # Using wildcards, assuming API supports them with '==' or implies 'like'
+        # Using 'like' with % wildcards as it's common.
+        filters.append(["name", "like", f"%{policy_name_contains}%"])
 
     api_url = f"/pm/config/adom/{adom}/pkg/{package_name}/firewall/policy"
     payload = {}
@@ -836,7 +835,7 @@ def query_firewall_policies(
     except Exception as e:
         return f"Exception querying firewall policies in package '{package_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_cli_scripts(adom: str = "root"):
     """
     Lists available CLI scripts in FortiManager for a specific ADOM.
@@ -878,7 +877,7 @@ def list_cli_scripts(adom: str = "root"):
     except Exception as e:
         return f"Exception listing CLI scripts in ADOM '{adom}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_cli_script_content(script_name: str, adom: str = "root"):
     """
     Retrieves the content of a specific CLI script from FortiManager.
@@ -929,7 +928,7 @@ def get_cli_script_content(script_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving CLI script content for '{script_name}' in ADOM '{adom}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def run_cli_script_on_device(script_name: str, device_name: str, adom: str = "root", vdom: str = "root"):
     """
     Executes a pre-defined CLI script on a target device/VDOM via FortiManager.
@@ -964,18 +963,17 @@ def run_cli_script_on_device(script_name: str, device_name: str, adom: str = "ro
         
         response = client.execute(api_url, data=payload) # Using 'data' for POST/EXECUTE type requests typically
         
-        if response and response.get('status', {}).get('code') == 0:
+        if code == 0: # Check code from tuple
             # Successful execution might return a task ID or other status info.
-            # For now, we'll return the full response for the user to interpret.
-            return {"status": "success", "message": f"Script '{script_name}' execution initiated on device '{device_name}' (VDOM: '{vdom}') in ADOM '{adom}'.", "details": response}
+            return {"status": "success", "message": f"Script '{script_name}' execution initiated on device '{device_name}' (VDOM: '{vdom}') in ADOM '{adom}'.", "details": response_data}
         else:
-            error_message = response.get('status', {}).get('message', 'Unknown error')
-            return f"Error executing script '{script_name}' on device '{device_name}': {error_message} (Full response: {response})"
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            return f"Error executing script '{script_name}' on device '{device_name}': {error_message} (Code: {code}, Full response: {response_data})"
             
     except Exception as e:
         return f"Exception executing CLI script '{script_name}' on device '{device_name}' in ADOM '{adom}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_adoms():
     """
     Lists all Administrative Domains (ADOMs) in FortiManager.
@@ -989,24 +987,25 @@ def list_adoms():
         # Based on documentation, /dvmdb/adom/ seems standard for FortiManager.
         api_url = "/dvmdb/adom/"
         
-        response = client.get(api_url)
+        code, response_data = client.get(api_url) # Unpack tuple
         
-        if response and response.get('status', {}).get('code') == 0:
+        if code == 0: # Check code from tuple
             # Successfully listed ADOMs.
-            adom_list = response.get('data', []) # 'data' usually contains the list of ADOMs
-            # Ensure we extract just the names or relevant details if the structure is complex
-            # For now, returning the raw list under 'data' or a simplified list if possible.
+            adom_list = response_data.get('data', []) if isinstance(response_data, dict) else response_data
+            
             if isinstance(adom_list, list) and all(isinstance(item, dict) and 'name' in item for item in adom_list):
-                return {"status": "success", "adoms": [adom.get('name') for adom in adom_list], "count": len(adom_list), "raw_response": response}
-            return {"status": "success", "adoms": adom_list, "raw_response": response} # Return full data if not simple name list
+                return {"status": "success", "adoms": [adom.get('name') for adom in adom_list], "count": len(adom_list), "raw_response": response_data}
+            elif isinstance(adom_list, list): # If it's a list but not of dicts with 'name'
+                 return {"status": "success", "adoms": adom_list, "count": len(adom_list), "raw_response": response_data}
+            return {"status": "success", "adoms_data": response_data} # Return full data if not simple name list
         else:
-            error_message = response.get('status', {}).get('message', 'Unknown error')
-            return f"Error listing ADOMs: {error_message} (Full response: {response})"
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            return f"Error listing ADOMs: {error_message} (Code: {code}, Full response: {response_data})"
             
     except Exception as e:
         return f"Exception listing ADOMs: {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def get_adom_details(adom_name: str):
     """
     Retrieves specific details for a given Administrative Domain (ADOM) in FortiManager.
@@ -1023,27 +1022,27 @@ def get_adom_details(adom_name: str):
         # API URL for fetching details of a specific ADOM.
         api_url = f"/dvmdb/adom/{adom_name.strip()}"
         
-        response = client.get(api_url)
+        code, response_data = client.get(api_url) # Unpack tuple
         
-        if response and response.get('status', {}).get('code') == 0:
+        if code == 0: # Check code from tuple
             # Successfully retrieved ADOM details.
-            # The 'data' field or the top-level response might contain the ADOM details
-            adom_data = response.get('data', response) 
-            if isinstance(adom_data, list) and len(adom_data) == 1: # Often details are a list with one item
-                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_data[0]}
-            elif isinstance(adom_data, dict): # Or it could be a direct dictionary
-                 return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_data}
-            else: # Fallback if structure is unexpected
-                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved, raw data included.", "data": response}
-
+            adom_details = response_data.get('data', response_data) if isinstance(response_data, dict) else response_data
+            
+            if isinstance(adom_details, list) and len(adom_details) == 1: 
+                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_details[0]}
+            elif isinstance(adom_details, dict): 
+                 return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_details}
+            else: 
+                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved, raw data included.", "data": response_data}
         else:
-            error_msg = response.get('status', {}).get('message', 'Unknown error')
-            return f"Error retrieving details for ADOM '{adom_name}': {error_msg} (Code: {response.get('status', {}).get('code')})"
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            error_api_code = response_data.get('status', {}).get('code', code) if isinstance(response_data, dict) else code
+            return f"Error retrieving details for ADOM '{adom_name}': {error_message} (Code: {error_api_code}, Full response: {response_data})"
             
     except Exception as e:
         return f"Exception retrieving details for ADOM '{adom_name}': {e}"
 
-# @mcp.tool()
+@mcp.tool()
 def list_vdoms_on_device(device_name: str, adom: str = "root"):
     """
     Lists Virtual Domains (VDOMs) for a specified device in FortiManager.
@@ -1061,11 +1060,11 @@ def list_vdoms_on_device(device_name: str, adom: str = "root"):
         # Example: /dvmdb/adom/{adom}/device/{device_name}/vdom
         api_url = f"/dvmdb/adom/{adom}/device/{device_name.strip()}/vdom"
         
-        response = client.get(api_url)
+        code, response_data = client.get(api_url) # Unpack tuple
         
-        if response and response.get('status', {}).get('code') == 0:
+        if code == 0: # Check code from tuple
             # Successfully listed VDOMs.
-            vdom_list = response.get('data', []) # 'data' usually contains the list
+            vdom_list = response_data.get('data', []) if isinstance(response_data, dict) else response_data # 'data' usually contains the list
             
             # The response structure for VDOMs can vary.
             # Often it's a list of objects, each with a 'name' or 'vdom_name' field.
@@ -1081,16 +1080,15 @@ def list_vdoms_on_device(device_name: str, adom: str = "root"):
                          extracted_vdoms.append(item) # return full object if just oid and op_status
                     # Add other potential name fields if known
                 if extracted_vdoms and len(extracted_vdoms) == len(vdom_list): # if all items had a name
-                    return {"vdoms": extracted_vdoms, "count": len(extracted_vdoms)}
+                    return {"vdoms": extracted_vdoms, "count": len(extracted_vdoms), "raw_response": response_data}
                 else: # If names couldn't be reliably extracted for all, return the raw data
-                    return {"vdom_data": vdom_list, "count": len(vdom_list)}
+                    return {"vdom_data": vdom_list, "count": len(vdom_list), "raw_response": response_data}
 
-            return {"vdom_data": vdom_list if vdom_list else "No VDOMs found or VDOMs not enabled.", "count": len(vdom_list) if vdom_list else 0}
-        elif response:
-            error_msg = response.get('status', {}).get('message', 'Unknown error')
-            return f"Error listing VDOMs for device '{device_name}' in ADOM '{adom}': {error_msg} (Code: {response.get('status', {}).get('code')})"
-        else:
-            return f"Failed to list VDOMs for device '{device_name}' in ADOM '{adom}'. No response or empty response from FortiManager."
+            return {"vdom_data": vdom_list if vdom_list else "No VDOMs found or VDOMs not enabled.", "count": len(vdom_list) if vdom_list else 0, "raw_response": response_data}
+        else: # Error from API
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            error_api_code = response_data.get('status', {}).get('code', code) if isinstance(response_data, dict) else code
+            return f"Error listing VDOMs for device '{device_name}' in ADOM '{adom}': {error_message} (Code: {error_api_code}, Full response: {response_data})"
             
     except Exception as e:
         return f"Exception listing VDOMs for device '{device_name}' in ADOM '{adom}': {e}"

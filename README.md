@@ -246,6 +246,7 @@ This project is just getting started! Here are some ideas for future development
     *   **ADOM Management:**
         *(This category is now complete!)*
     *   **Device & VDOM Insights:**
+        *(This category is now complete based on the initial list!)*
     *   **FortiGuard & System (FortiManager specific):**
         *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).
         *   `list_available_firmware_versions`: List firmware available on FortiManager for a device model.
