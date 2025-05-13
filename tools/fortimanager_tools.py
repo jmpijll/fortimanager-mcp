@@ -1250,6 +1250,43 @@ def install_policy_package(
     except Exception as e:
         raise RuntimeError(f"Exception installing policy package '{package_name}': {e}")
 
+@mcp.tool()
+def install_device_config(
+    scope: Annotated[List[Dict[str, str]], Field(description="List of targets, each with 'name' (device) and 'vdom'")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
+    """
+    Installs device-level settings to a device.
+    Uses the /securityconsole/install/device endpoint (FortiManager 7.4 API @Web).
+    Parameters:
+      - scope: List of dicts, each with 'name' (device) and 'vdom'.
+      - adom: Administrative Domain (default: 'root').
+    Returns a dict with task ID and status, or raises on error.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    if not scope or not isinstance(scope, list):
+        raise ValueError("scope parameter must be a non-empty list of dicts with 'name' and 'vdom'.")
+    try:
+        api_url = "/securityconsole/install/device"
+        payload = {
+            "adom": adom,
+            "scope": scope
+        }
+        code, response_data = client.execute(api_url, data=payload)
+        if code == 0 and response_data:
+            return {
+                "message": f"Device-level install triggered in ADOM '{adom}'.",
+                "task_id": response_data.get("taskid"),
+                "details": response_data
+            }
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error installing device config: {error_message} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception installing device config: {e}")
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:

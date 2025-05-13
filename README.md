@@ -240,9 +240,14 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: None.
     *   **Returns**: A dict with version and build information, or an error message.
 
-9.  **`install_policy_package`**
+9. **`install_policy_package`**
     *   **Description**: Installs a policy package to its targets. Uses the /securityconsole/install/package endpoint (FortiManager JSON API @Web).
     *   **Parameters**: `package_name` (string, required), `scope` (list of dicts with 'name' and 'vdom', required), `adom` (string, optional, default: "root").
+    *   **Returns**: A dict with task ID and status, or an error message.
+
+10. **`install_device_config`**
+    *   **Description**: Installs device-level settings to a device. Uses the /securityconsole/install/device endpoint (FortiManager 7.4 API @Web).
+    *   **Parameters**: `scope` (list of dicts with 'name' and 'vdom', required), `adom` (string, optional, default: "root").
     *   **Returns**: A dict with task ID and status, or an error message.
 
 ## 🔮 Future Enhancements
@@ -250,7 +255,6 @@ Here are the tools currently implemented and ready for use:
 Planned features for future development:
 
 * **Installation & Task Management:**
-    * `install_device_config`: Install device-level settings to a device. (Use with caution!)
     * `get_task_status`: Check the status of a background FortiManager task by its ID.
 * **Logging & Reporting:**
     * `get_fortimanager_event_logs`: Retrieve FortiManager event logs with basic filtering options (e.g., severity, time range).
