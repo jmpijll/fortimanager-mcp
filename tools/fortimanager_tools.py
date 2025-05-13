@@ -511,6 +511,49 @@ def get_device_routing_table(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving routing table for '{device_name}': {e}"
 
+# @mcp.tool()
+def get_policy_package_details(package_name: str, adom: str = "root"):
+    """
+    Retrieves detailed information for a specific policy package in an ADOM.
+    Requires package_name. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not package_name:
+        return "Error: package_name parameter is required."
+
+    try:
+        # API URL for specific policy package details.
+        # Example: /pm/pkg/adom/{adom}/{package_name}
+        api_url = f"/pm/pkg/adom/{adom}/{package_name}"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            # Policy package details are typically in the 'data' field or could be the root response.
+            package_details = response_data.get("data", response_data)
+            if not package_details: # Check if details are empty even if call succeeded
+                 return f"No details found for policy package '{package_name}' in ADOM '{adom}' at '{api_url}'. The package might be empty or details are not available."
+            return {
+                "message": f"Successfully retrieved details for policy package '{package_name}' in ADOM '{adom}'.",
+                "package_name": package_name,
+                "adom": adom,
+                "details": package_details
+            }
+        elif code == 0: # Successful call but empty response_data
+            return f"Policy package '{package_name}' in ADOM '{adom}' was found (or query was successful), but no details were returned from '{api_url}'."
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            # Check for common "not found" errors
+            if code == -3 or "Object not exist" in error_message or "No such package" in error_message or "not found" in error_message.lower():
+                 return f"Error: Policy package '{package_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving details for policy package '{package_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving details for policy package '{package_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -592,6 +635,16 @@ if __name__ == '__main__':
         #         print(routing_table_result)
         # else:
         #     print("Skipping get_device_routing_table test as no device name was determined.")
+
+        # Test get_policy_package_details
+        # print("\n--- Get Policy Package Details ---")
+        # if isinstance(packages, list) and len(packages) > 0 and isinstance(packages[0], dict) and 'name' in packages[0]:
+        #     test_package_name = packages[0]['name'] # Use the first package from list_policy_packages for testing
+        #     print(f"Getting details for policy package: {test_package_name}")
+        #     package_details_result = get_policy_package_details(package_name=test_package_name, adom="root")
+        #     print(package_details_result)
+        # else:
+        #     print("Skipping get_policy_package_details test as no package name could be determined automatically from list_policy_packages.")
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")

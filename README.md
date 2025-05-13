@@ -165,6 +165,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: The device's routing table information or an error message.
 
+9.  **`get_fortimanager_policy_package_details`**
+    *   **Description**: Retrieves detailed information for a specific policy package in an ADOM. Requires package_name. ADOM defaults to 'root'.
+    *   **Parameters**: `package_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: Detailed information for the specified policy package or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -175,7 +180,6 @@ This project is just getting started! Here are some ideas for future development
     *   **Device Management:**
         *(This category is now complete based on the initial list!)*
     *   **Policy & Objects Management:**
-        *   `get_policy_package_details`: Get more details about a specific policy package.
         *   `list_firewall_policies`: List firewall policies within a policy package.
         *   `get_firewall_policy_details`: Retrieve full configuration of a specific firewall policy.
         *   `list_firewall_objects`: List firewall objects (addresses, services, etc.) in an ADOM.

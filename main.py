@@ -70,6 +70,10 @@ def list_device_interfaces_wrapper(device_name: str, adom: str = "root"):
 def get_device_routing_table_wrapper(device_name: str, adom: str = "root"):
     return fmg_tools.get_device_routing_table(device_name=device_name, adom=adom)
 
+@mcp.tool(name="get_fortimanager_policy_package_details", description=fmg_tools.get_policy_package_details.__doc__)
+def get_policy_package_details_wrapper(package_name: str, adom: str = "root"):
+    return fmg_tools.get_policy_package_details(package_name=package_name, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.
