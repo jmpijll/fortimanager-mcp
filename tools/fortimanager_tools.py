@@ -278,6 +278,60 @@ def get_device_details(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving device details for '{device_name}': {e}"
 
+# @mcp.tool()
+def get_device_config_status(device_name: str, adom: str = "root"):
+    """
+    Retrieves the configuration synchronization status for a specific device.
+    Interprets the 'conf_status' field from the device details.
+    Device name is required. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name}"
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data and isinstance(response_data.get("data"), dict):
+            device_info = response_data["data"]
+            conf_status_val = device_info.get("conf_status") # Standard field for config status
+            
+            # Interpret conf_status (common values, might need adjustment based on FMG version)
+            # 0: unknown, 1: synchronized, 2: out-of-sync, 3: auto-update, 4: never synchronized (sometimes), 5: modified (sometimes)
+            status_map = {
+                0: "Unknown",
+                1: "Synchronized",
+                2: "Out-of-Sync",
+                3: "Auto-Update",
+                4: "Never Synchronized / Pending", # FMG 7.0.0 changed meaning slightly
+                5: "Modified / Unsynced Changes"
+            }
+            
+            status_description = status_map.get(conf_status_val, f"Raw conf_status: {conf_status_val}")
+            
+            # Return both raw value and description for clarity
+            return {
+                "device_name": device_name,
+                "adom": adom,
+                "conf_status_raw": conf_status_val,
+                "config_status_description": status_description,
+                "details_url_checked": api_url # For reference
+            }
+        elif code == 0: # Device found but data format unexpected or empty
+            return f"Device '{device_name}' found in ADOM '{adom}', but config status could not be determined from response: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
+                 return f"Error: Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving config status for device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving config status for '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -309,6 +363,15 @@ if __name__ == '__main__':
         # else:
         #     print("Skipping get_device_details test as no device name could be determined automatically.")
         #     print("Please manually provide a device_name to test get_device_details.")
+        
+        # Test get_device_config_status - uses the same test_device_name from above
+        # print("\n--- Get Device Config Status ---")
+        # if 'test_device_name' in locals() and test_device_name:
+        #     print(f"Testing config status for device: {test_device_name}")
+        #     config_status = get_device_config_status(device_name=test_device_name, adom="root")
+        #     print(config_status)
+        # else:
+        #     print("Skipping get_device_config_status test as no device name was determined from list_devices.")
         
     except ValueError as ve:
         print(f"Configuration Error: {ve}")

@@ -145,6 +145,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: Detailed information for the specified device or an error message.
 
+5.  **`get_fortimanager_device_config_status`**
+    *   **Description**: Retrieves the configuration synchronization status for a specific device. Interprets the 'conf_status' field from the device details. Device name is required. ADOM defaults to 'root'.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: An object containing the raw and interpreted configuration status, or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -153,7 +158,6 @@ This project is just getting started! Here are some ideas for future development
 
 *   **More Tools!**
     *   **Device Management:**
-        *   `get_device_config_status`: Check configuration synchronization status.
         *   `retrieve_device_config_from_device`: Trigger FortiManager to fetch the latest config from a device.
         *   `list_device_interfaces`: List network interfaces for a device with basic status/config.
         *   `get_device_routing_table`: Fetch the routing table for a device.
