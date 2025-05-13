@@ -90,6 +90,28 @@ def list_firewall_objects_wrapper(object_type: str, adom: str = "root"):
 def get_firewall_object_details_wrapper(object_name: str, object_type: str, adom: str = "root"):
     return fmg_tools.get_firewall_object_details(object_name=object_name, object_type=object_type, adom=adom)
 
+@mcp.tool(name="query_fortimanager_firewall_policies", description=fmg_tools.query_firewall_policies.__doc__)
+def query_firewall_policies_wrapper(
+    package_name: str,
+    adom: str = "root", 
+    source_address: str = None, 
+    destination_address: str = None, 
+    service: str = None, 
+    action: str = None,
+    status: str = None,
+    policy_name_contains: str = None
+):
+    return fmg_tools.query_firewall_policies(
+        package_name=package_name,
+        adom=adom,
+        source_address=source_address,
+        destination_address=destination_address,
+        service=service,
+        action=action,
+        status=status,
+        policy_name_contains=policy_name_contains
+    )
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

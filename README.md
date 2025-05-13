@@ -190,6 +190,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `object_name` (string), `object_type` (string), `adom` (string, optional, default: "root").
     *   **Returns**: Detailed information for the specified firewall object or an error message.
 
+14. **`query_fortimanager_firewall_policies`**
+    *   **Description**: Queries firewall policies within a specific policy package based on filter criteria. Requires package_name. ADOM defaults to 'root'. All filter parameters are optional. Filters on source_address, destination_address, service, action, status, and partial policy name.
+    *   **Parameters**: `package_name` (string), `adom` (string, optional), `source_address` (string, optional), `destination_address` (string, optional), `service` (string, optional), `action` (string, optional, e.g., 'accept', 'deny'), `status` (string, optional, e.g., 'enable', 'disable'), `policy_name_contains` (string, optional).
+    *   **Returns**: A list of firewall policies matching the criteria, or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -200,7 +205,7 @@ This project is just getting started! Here are some ideas for future development
     *   **Device Management:**
         *(This category is now complete based on the initial list!)*
     *   **Policy & Objects Management:**
-        *   `query_firewall_policy`: Search policies based on source/destination, service, etc.
+        *(This category is now complete based on the initial list!)*
     *   **Scripts & Templates:**
         *   `list_cli_scripts`: List available CLI scripts.
         *   `get_cli_script_content`: View the content of a specific CLI script.

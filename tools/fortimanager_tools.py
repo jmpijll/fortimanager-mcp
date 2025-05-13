@@ -752,6 +752,90 @@ def get_firewall_object_details(object_name: str, object_type: str, adom: str = 
     except Exception as e:
         return f"Exception retrieving details for object '{object_name}' (type '{object_type}'): {e}"
 
+# @mcp.tool()
+def query_firewall_policies(
+    package_name: str,
+    adom: str = "root", 
+    source_address: str = None, 
+    destination_address: str = None, 
+    service: str = None, 
+    action: str = None,
+    status: str = None,
+    policy_name_contains: str = None # For simple name filtering
+):
+    """
+    Queries firewall policies within a specific policy package based on filter criteria.
+    Requires package_name. ADOM defaults to 'root'.
+    All filter parameters are optional. If none are provided, it may list all policies (or a default limit).
+    Note: Field names for filtering (e.g., 'srcaddr', 'dstaddr', 'service', 'action', 'status', 'name') must match FortiManager API schema.
+    This tool constructs a basic filter. For more complex queries, direct API interaction might be needed.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not package_name:
+        return "Error: package_name parameter is required."
+
+    filters = []
+    if source_address:
+        filters.append(["srcaddr", "==", source_address]) # Assuming 'srcaddr' is the field name for source address objects
+    if destination_address:
+        filters.append(["dstaddr", "==", destination_address]) # Assuming 'dstaddr' for destination
+    if service:
+        filters.append(["service", "==", service]) # Assuming 'service' for service objects
+    if action:
+        # Common actions: accept, deny. FMG API might use numeric values or specific strings.
+        # For simplicity, assuming string match here. Might need mapping if API uses integers.
+        filters.append(["action", "==", action.lower()]) 
+    if status:
+        # Common status: enable, disable
+        filters.append(["status", "==", status.lower()])
+    if policy_name_contains:
+        # FortiManager API might use 'like' or a regex operator for contains.
+        # For simplicity, using '==' with wildcard assumption or a specific 'contains' operator if available.
+        # A common pattern is using a wildcard that the API interprets, e.g. *value* or %value%.
+        # Here, we'll use a field name `name` and assume the API supports partial match or we use `==` for exact name if no partial match built-in.
+        # For a true "contains", the API might require a specific syntax or operator like "~~" or "like".
+        # Let's use a simple filter for name for now; this part is highly API dependent for true 'contains'.
+        filters.append(["name", "==", f"*{policy_name_contains}*"]) # Using wildcards, assuming API supports them with '==' or implies 'like'
+
+    api_url = f"/pm/config/adom/{adom}/pkg/{package_name}/firewall/policy"
+    payload = {}
+    if filters:
+        payload["filter"] = filters
+    
+    # You can also add options like 'limit', 'offset', 'sort' to payload if needed
+    # payload["limit"] = 100 
+
+    try:
+        # pyfmg's get method can take a `data` parameter for the payload (including filters)
+        code, response_data = client.get(url=api_url, data=payload if payload else None)
+
+        if code == 0 and response_data:
+            policies = response_data.get("data")
+            if isinstance(policies, list):
+                if not policies:
+                    return f"No firewall policies found matching the criteria in package '{package_name}' (ADOM '{adom}')."
+                return {
+                    "message": f"Successfully queried firewall policies in package '{package_name}' (ADOM '{adom}').",
+                    "package_name": package_name,
+                    "adom": adom,
+                    "filter_criteria_used": filters if filters else "None (all policies potentially listed)",
+                    "policy_count": len(policies),
+                    "policies": policies
+                }
+            else:
+                return f"Policy query data for package '{package_name}' is not in the expected list format: {policies}"
+        elif code == 0:
+             return f"Policy query for package '{package_name}' was successful, but no data was returned or data format was unexpected: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            return f"Error querying firewall policies in package '{package_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception querying firewall policies in package '{package_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -909,6 +993,20 @@ if __name__ == '__main__':
         #     print(object_detail_result)
         # else:
         #     print("Skipping get_firewall_object_details test as no object name/type could be determined from previous tests.")
+
+        # Test query_firewall_policies
+        # print("\n--- Query Firewall Policies (example: action=accept) ---")
+        # if 'test_package_name' in locals() and test_package_name:
+        #     print(f"Querying policies in package: {test_package_name} with action='accept'")
+        #     query_result = query_firewall_policies(package_name=test_package_name, adom="root", action="accept")
+        #     if isinstance(query_result, dict) and "policies" in query_result:
+        #         print(f"Found {query_result.get('policy_count', 0)} policies matching criteria.")
+        #         for policy in query_result["policies"][:3]: # Print first 3
+        #             print(f"  - ID: {policy.get('policyid')}, Name: {policy.get('name')}, Action: {policy.get('action')}, Status: {policy.get('status')}")
+        #     else:
+        #         print(query_result)
+        # else:
+        #     print("Skipping query_firewall_policies test as no package_name was available.")
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
