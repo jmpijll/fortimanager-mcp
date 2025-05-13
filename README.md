@@ -230,38 +230,30 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: An object containing HA status details, or an error message.
 
-*(More tools to come!)*
+7.  **`list_available_firmware_versions`**
+    *   **Description**: Lists firmware versions available on FortiManager for a given device model.
+    *   **Parameters**: `device_model` (string, required) - The device model to list available firmware versions for.
+    *   **Returns**: A list of firmware version details or an error message.
 
 ## 🔮 Future Enhancements
 
-This project is just getting started! Here are some ideas for future development:
+Planned features for future development:
 
-*   **More Tools!**
-    *   **Device Management:**
-        *(This category is now complete based on the initial list!)*
-    *   **Policy & Objects Management:**
-        *(This category is now complete based on the initial list!)*
-    *   **Scripts & Templates:**
-        *(This category is now complete! Consider adding advanced template management or script versioning in the future.)*
-    *   **ADOM Management:**
-        *(This category is now complete!)*
-    *   **Device & VDOM Insights:**
-        *(This category is now complete based on the initial list!)*
-    *   **FortiGuard & System (FortiManager specific):**
-        *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).
-        *   `list_available_firmware_versions`: List firmware available on FortiManager for a device model.
-        *   `get_fortimanager_api_version`: Get the FortiManager API version and build number.
-    *   **Installation & Task Management:**
-        *   `install_policy_package`: Install a policy package to its targets. (Use with caution!)
-        *   `install_device_config`: Install device-level settings to a device. (Use with caution!)
-        *   `get_task_status`: Check the status of a background FortiManager task by its ID.
-    *   **Logging & Reporting:** (New Category)
-        *   `get_fortimanager_event_logs`: Retrieve FortiManager event logs with basic filtering options (e.g., severity, time range).
-    *   **Configuration & Backup (Advanced - Use with Caution):** (New Category)
-        *   `get_device_config_backup_text`: Retrieve the configuration of a device as text.
-*   **Advanced Error Handling**: More specific error codes and messages from API interactions.
-*   **Tool Input Validation**: Stricter validation for tool parameters.
-*   **Write Operations**: Carefully implement tools that make changes to FortiManager (e.g., adding objects, modifying policies) with appropriate safeguards and clear warnings in descriptions.
+* **FortiGuard & System (FortiManager specific):**
+    * `get_fortimanager_api_version`: Get the FortiManager API version and build number.
+* **Installation & Task Management:**
+    * `install_policy_package`: Install a policy package to its targets. (Use with caution!)
+    * `install_device_config`: Install device-level settings to a device. (Use with caution!)
+    * `get_task_status`: Check the status of a background FortiManager task by its ID.
+* **Logging & Reporting:**
+    * `get_fortimanager_event_logs`: Retrieve FortiManager event logs with basic filtering options (e.g., severity, time range).
+* **Configuration & Backup:**
+    * `get_device_config_backup_text`: Retrieve the configuration of a device as text.
+
+General enhancements:
+* **Advanced Error Handling**: More specific error codes and messages from API interactions.
+* **Tool Input Validation**: Stricter validation for tool parameters.
+* **Write Operations**: Carefully implement tools that make changes to FortiManager (e.g., adding objects, modifying policies) with appropriate safeguards and clear warnings in descriptions.
 
 ## 🤝 Contributing
 

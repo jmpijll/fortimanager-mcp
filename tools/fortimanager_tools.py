@@ -1148,6 +1148,37 @@ def get_device_ha_status(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving HA status for device '{device_name}': {e}"
 
+@mcp.tool()
+def list_available_firmware_versions(
+    device_model: Annotated[str, Field(description="Device model to list available firmware versions for")]
+) -> list[dict]:
+    """
+    Lists firmware versions available on FortiManager for a given device model.
+    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
+    Returns a list of firmware version details.
+    Raises ValueError if the device model is missing or API call fails.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    if not device_model:
+        raise ValueError("device_model parameter is required.")
+    try:
+        # FortiManager 7.4 API endpoint for firmware listing:
+        # /dvmdb/firmware/{device_model}
+        api_url = f"/dvmdb/firmware/{device_model}"
+        code, response_data = client.get(api_url)
+        if code == 0 and response_data:
+            # The firmware list is usually in the 'data' field
+            return response_data.get("data", response_data)
+        elif code == 0:
+            return []
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error listing firmware versions for model '{device_model}': {error_message} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception listing firmware versions for model '{device_model}': {e}")
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
