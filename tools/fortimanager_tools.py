@@ -399,6 +399,56 @@ def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception initiating config retrieval for '{device_name}': {e}"
 
+# @mcp.tool()
+def list_device_interfaces(device_name: str, adom: str = "root"):
+    """
+    Lists network interfaces for a specific device in FortiManager.
+    Attempts to retrieve interface configurations (e.g., IP, status).
+    Device name is required. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # Common API path for system interfaces configuration.
+        # Example: /dvmdb/adom/{adom}/device/{device_name}/config/system/interface
+        # The exact path might vary slightly based on the FortiManager version or if it's a specific config block.
+        # The `pyfmg` library might need a full path or a path relative to a device config tree.
+        api_path = f"/dvmdb/adom/{adom}/device/{device_name}/config/system/interface"
+
+        # Using client.get() to retrieve configuration data. 
+        # This assumes the interface list is available via a GET request to this path.
+        code, response_data = client.get(api_path)
+
+        if code == 0 and response_data and isinstance(response_data.get("data"), list):
+            interfaces = response_data["data"]
+            if not interfaces:
+                 return f"No interfaces found for device '{device_name}' in ADOM '{adom}' at path '{api_path}', or the device does not expose them this way."
+            
+            # We can return the raw interface data or attempt to summarize it.
+            # For now, let's return the list of interface objects directly.
+            return {
+                "message": f"Successfully retrieved interfaces for device '{device_name}' in ADOM '{adom}'.",
+                "device_name": device_name,
+                "adom": adom,
+                "interface_count": len(interfaces),
+                "interfaces": interfaces # This will be a list of dictionaries
+            }
+        elif code == 0: # Data format unexpected or empty
+            return f"Retrieved data for device '{device_name}' interfaces at '{api_path}', but the format was unexpected or empty: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message or "No such an entry" in error_message:
+                 return f"Error: Device '{device_name}' or interface config path '{api_path}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving interfaces for device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving interfaces for '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -448,6 +498,22 @@ if __name__ == '__main__':
         #     print(retrieval_result)
         # else:
         #     print("Skipping retrieve_device_config test as no device name was determined.")
+        
+        # Test list_device_interfaces
+        # print("\n--- List Device Interfaces ---")
+        # if 'test_device_name' in locals() and test_device_name:
+        #     print(f"Listing interfaces for device: {test_device_name}")
+        #     interfaces_result = list_device_interfaces(device_name=test_device_name, adom="root")
+        #     if isinstance(interfaces_result, dict) and "interfaces" in interfaces_result:
+        #         print(f"Found {interfaces_result['interface_count']} interfaces.")
+        #         for iface in interfaces_result["interfaces"][:3]: # Print first 3 interfaces for brevity
+        #             print(f"  - Name: {iface.get('name', 'N/A')}, IP: {iface.get('ip', 'N/A')}, Status: {iface.get('status', 'N/A')}")
+        #         if interfaces_result['interface_count'] > 3:
+        #             print(f"  ... and {interfaces_result['interface_count'] - 3} more.")
+        #     else:
+        #         print(interfaces_result) # Print error or other message
+        # else:
+        #     print("Skipping list_device_interfaces test as no device name was determined.")
         
     except ValueError as ve:
         print(f"Configuration Error: {ve}")

@@ -155,6 +155,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: Information about the initiated task (e.g., task ID) or an error message.
 
+7.  **`list_fortimanager_device_interfaces`**
+    *   **Description**: Lists network interfaces for a specific device in FortiManager. Attempts to retrieve interface configurations (e.g., IP, status).
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: A list of interface details or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -163,7 +168,6 @@ This project is just getting started! Here are some ideas for future development
 
 *   **More Tools!**
     *   **Device Management:**
-        *   `list_device_interfaces`: List network interfaces for a device with basic status/config.
         *   `get_device_routing_table`: Fetch the routing table for a device.
     *   **Policy & Objects Management:**
         *   `get_policy_package_details`: Get more details about a specific policy package.
