@@ -651,6 +651,64 @@ def get_firewall_policy_details(policy_id: str, package_name: str, adom: str = "
     except Exception as e:
         return f"Exception retrieving details for firewall policy ID '{policy_id}': {e}"
 
+# @mcp.tool()
+def list_firewall_objects(object_type: str, adom: str = "root"):
+    """
+    Lists firewall objects of a specified type within an ADOM.
+    Requires object_type (e.g., 'firewall/address', 'firewall/service/custom', 'firewall/addrgrp').
+    ADOM defaults to 'root'.
+    Common object_type examples:
+    - firewall/address
+    - firewall/addrgrp
+    - firewall/service/custom
+    - firewall/service/group
+    - application/list
+    - ips/sensor
+    - webfilter/profile
+    - antivirus/profile
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not object_type:
+        return "Error: object_type parameter is required."
+
+    try:
+        # API URL for listing firewall objects of a specific type.
+        # Example: /pm/config/adom/{adom}/obj/{object_type}
+        # The object_type needs to be correctly formatted, e.g., 'firewall/address'
+        api_url = f"/pm/config/adom/{adom}/obj/{object_type.strip()}"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            objects_list = response_data.get("data")
+            
+            if isinstance(objects_list, list):
+                if not objects_list:
+                    return f"No objects of type '{object_type}' found in ADOM '{adom}' at '{api_url}'."
+                return {
+                    "message": f"Successfully retrieved objects of type '{object_type}' in ADOM '{adom}'.",
+                    "object_type": object_type,
+                    "adom": adom,
+                    "object_count": len(objects_list),
+                    "objects": objects_list
+                }
+            else:
+                return f"Objects data for type '{object_type}' at '{api_url}' is not in the expected list format: {objects_list}"
+        elif code == 0: # Successful call but empty response_data or unexpected format
+             return f"Query for objects of type '{object_type}' in ADOM '{adom}' at '{api_url}' was successful, but no data was returned or data was not in expected format: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            # Check for common "not found" or "invalid type" errors
+            if code == -3 or "Object not exist" in error_message or "not found" in error_message.lower() or "Invalid object type" in error_message or "No such an entry" in error_message:
+                 return f"Error: Objects of type '{object_type}' or the specified path not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error listing objects of type '{object_type}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception listing objects of type '{object_type}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -770,6 +828,29 @@ if __name__ == '__main__':
         #         print(firewall_policies_result)
         # else:
         #     print("Skipping list_firewall_policies test as no package_name was available.")
+
+        # Test list_firewall_objects
+        # print("\n--- List Firewall Objects (firewall/address) ---")
+        # firewall_objects_result = list_firewall_objects(object_type="firewall/address", adom="root")
+        # if isinstance(firewall_objects_result, dict) and "objects" in firewall_objects_result:
+        #     print(f"Found {firewall_objects_result.get('object_count', 0)} firewall/address objects.")
+        #     for obj in firewall_objects_result["objects"][:3]: # Print first 3 objects
+        #         print(f"  - Name: {obj.get('name', 'N/A')}, Subnet: {obj.get('subnet', 'N/A')}, Type: {obj.get('type','N/A')}")
+        #     if firewall_objects_result.get('object_count', 0) > 3:
+        #         print(f"  ... and {firewall_objects_result['object_count'] - 3} more objects.")
+        # else:
+        #     print(firewall_objects_result)
+
+        # print("\n--- List Firewall Objects (firewall/service/custom) ---")
+        # custom_services_result = list_firewall_objects(object_type="firewall/service/custom", adom="root")
+        # if isinstance(custom_services_result, dict) and "objects" in custom_services_result:
+        #     print(f"Found {custom_services_result.get('object_count', 0)} firewall/service/custom objects.")
+        #     for srv in custom_services_result["objects"][:3]: # Print first 3 objects
+        #         print(f"  - Name: {srv.get('name', 'N/A')}, Protocol: {srv.get('protocol', 'N/A')}, TCP Portrange: {srv.get('tcp-portrange','N/A')}")
+        #     if custom_services_result.get('object_count', 0) > 3:
+        #         print(f"  ... and {custom_services_result['object_count'] - 3} more objects.")
+        # else:
+        #     print(custom_services_result)
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
