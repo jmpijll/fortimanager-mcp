@@ -150,6 +150,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: An object containing the raw and interpreted configuration status, or an error message.
 
+6.  **`retrieve_fortimanager_device_config`**
+    *   **Description**: Triggers FortiManager to retrieve the latest configuration from a specified device. This action typically starts a task on FortiManager. Device name is required. ADOM defaults to 'root'.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: Information about the initiated task (e.g., task ID) or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -158,7 +163,6 @@ This project is just getting started! Here are some ideas for future development
 
 *   **More Tools!**
     *   **Device Management:**
-        *   `retrieve_device_config_from_device`: Trigger FortiManager to fetch the latest config from a device.
         *   `list_device_interfaces`: List network interfaces for a device with basic status/config.
         *   `get_device_routing_table`: Fetch the routing table for a device.
     *   **Policy & Objects Management:**

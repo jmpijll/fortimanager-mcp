@@ -332,6 +332,73 @@ def get_device_config_status(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving config status for '{device_name}': {e}"
 
+# @mcp.tool()
+def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
+    """
+    Triggers FortiManager to retrieve the latest configuration from a specified device.
+    This action typically starts a task on FortiManager.
+    Device name is required. ADOM defaults to 'root'.
+    Returns the task information if successful.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # The API to trigger a configuration retrieval is often an 'exec' type or a POST to a specific URL.
+        # Example from FortiManager API docs (8.23): /dvmdb/adom/{adom}/device/{device_name}/retrieve (often a POST or specific exec method)
+        # Or it might be /sys/retrieve/device for some versions or contexts.
+        # pyfmg library might have an 'execute' or 'update' method for such actions.
+        # Let's assume it's a POST-like operation, often handled by `client.execute` or `client.update` or a specific named method.
+        # For pyfmg, often operations like this are under an 'exec' category, so URL might be a bit different if using a generic exec method.
+        # For now, let's try a common pattern which might be POSTing to a URL like this, or using an execute method.
+        # If pyfmg's .get() is only for GET, we might need .post() or .execute().
+        # The `pyfmg` library documentation shows an execute method: `fmg_instance.execute("securityconsole/install/package", ...)`
+        # This suggests the first argument to execute is the command path, and kwargs are parameters.
+
+        # Let's try using the execute method with a likely path.
+        # The URL for the actual RPC call might be something like `/dvmdb/adom/{adom_name}/device/{device_name}/cmd/retrieve`
+        # or the data payload might specify the action.
+
+        # Assuming an exec call structure based on general FortiManager API patterns for actions.
+        # The direct RPC target URL might be something like this, or the data part of a generic exec might point here.
+        api_command_path = f"/dvmdb/adom/{adom}/device/{device_name}/cmd/retrieve"
+        
+        # The pyfmg `execute` method seems appropriate here. What it expects as `data` or `**params` for this specific command is key.
+        # Often, such commands don't require a complex body, just the action invoked on the URL/path.
+        # If `execute` takes the path as first arg and then kwargs for payload:
+        code, response_data = client.execute(api_command_path) # May need specific parameters based on pyfmg's execute method signature
+
+        if code == 0 and response_data:
+            # Successful execution usually returns a task ID
+            if response_data.get("data") and isinstance(response_data["data"], dict) and "task" in response_data["data"]:
+                return {
+                    "message": f"Successfully initiated configuration retrieval for device '{device_name}' in ADOM '{adom}'.",
+                    "task_id": response_data["data"]["task"],
+                    "details": response_data["data"]
+                }
+            elif "task" in response_data: # If task ID is at the root of response_data
+                return {
+                    "message": f"Successfully initiated configuration retrieval for device '{device_name}' in ADOM '{adom}'.",
+                    "task_id": response_data["task"],
+                    "details": response_data
+                }
+            else:
+                return {"message": f"Configuration retrieval initiated for '{device_name}', but no task ID found in response.", "response": response_data}
+        elif code == 0: # Should have response_data if successful
+            return f"Configuration retrieval for '{device_name}' may have succeeded but response was empty or unexpected: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
+                 return f"Error: Device '{device_name}' not found in ADOM '{adom}' for config retrieval. (Code: {code}) - {error_message}"
+            return f"Error initiating config retrieval for device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception initiating config retrieval for '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -372,6 +439,15 @@ if __name__ == '__main__':
         #     print(config_status)
         # else:
         #     print("Skipping get_device_config_status test as no device name was determined from list_devices.")
+        
+        # Test retrieve_device_config_from_device
+        # print("\n--- Retrieve Device Config ---")
+        # if 'test_device_name' in locals() and test_device_name:
+        #     print(f"Attempting to retrieve config for device: {test_device_name}")
+        #     retrieval_result = retrieve_device_config_from_device(device_name=test_device_name, adom="root")
+        #     print(retrieval_result)
+        # else:
+        #     print("Skipping retrieve_device_config test as no device name was determined.")
         
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
