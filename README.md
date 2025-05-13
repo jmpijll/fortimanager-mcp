@@ -147,16 +147,36 @@ Here are the tools currently implemented and ready for use:
 This project is just getting started! Here are some ideas for future development:
 
 *   **More Tools!**
-    *   Get detailed device information (config, interfaces, etc.).
-    *   List and inspect policy packages and firewall policies.
-    *   Retrieve script execution status.
-    *   Manage ADOMs.
-    *   Install policy packages or device settings.
-    *   Retrieve FortiGuard status and package versions.
+    *   **Device Management:**
+        *   `get_device_details`: Retrieve detailed information for a specific device (serial number, firmware, connection status, HA status, platform).
+        *   `get_device_config_status`: Check configuration synchronization status.
+        *   `retrieve_device_config_from_device`: Trigger FortiManager to fetch the latest config from a device.
+        *   `list_device_interfaces`: List network interfaces for a device with basic status/config.
+        *   `get_device_routing_table`: Fetch the routing table for a device.
+    *   **Policy & Objects Management:**
+        *   `get_policy_package_details`: Get more details about a specific policy package.
+        *   `list_firewall_policies`: List firewall policies within a policy package.
+        *   `get_firewall_policy_details`: Retrieve full configuration of a specific firewall policy.
+        *   `list_firewall_objects`: List firewall objects (addresses, services, etc.) in an ADOM.
+        *   `get_firewall_object_details`: Get details for a specific firewall object.
+        *   `query_firewall_policy`: Search policies based on source/destination, service, etc.
+    *   **Scripts & Templates:**
+        *   `list_cli_scripts`: List available CLI scripts.
+        *   `get_cli_script_content`: View the content of a specific CLI script.
+        *   `run_cli_script_on_device`: Execute a pre-defined CLI script on a target device/VDOM.
+    *   **ADOM Management:**
+        *   `list_adoms`: List all Administrative Domains (ADOMs).
+        *   `get_adom_details`: Get specific details for an ADOM.
+    *   **FortiGuard & System (FortiManager specific):**
+        *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).
+        *   `list_available_firmware_versions`: List firmware available on FortiManager for a device model.
+    *   **Installation & Task Management:**
+        *   `install_policy_package`: Install a policy package to its targets. (Use with caution!)
+        *   `install_device_config`: Install device-level settings to a device. (Use with caution!)
+        *   `get_task_status`: Check the status of a background FortiManager task by its ID.
 *   **Advanced Error Handling**: More specific error codes and messages from API interactions.
 *   **Tool Input Validation**: Stricter validation for tool parameters.
-*   **Configuration for Different ADOMs**: Easier way to specify ADOMs for tools.
-*   **Write Operations**: Carefully implement tools that make changes to FortiManager (e.g., adding objects, modifying policies) with appropriate safeguards.
+*   **Write Operations**: Carefully implement tools that make changes to FortiManager (e.g., adding objects, modifying policies) with appropriate safeguards and clear warnings in descriptions.
 
 ## 🤝 Contributing
 
