@@ -86,6 +86,10 @@ def get_firewall_policy_details_wrapper(policy_id: str, package_name: str, adom:
 def list_firewall_objects_wrapper(object_type: str, adom: str = "root"):
     return fmg_tools.list_firewall_objects(object_type=object_type, adom=adom)
 
+@mcp.tool(name="get_fortimanager_firewall_object_details", description=fmg_tools.get_firewall_object_details.__doc__)
+def get_firewall_object_details_wrapper(object_name: str, object_type: str, adom: str = "root"):
+    return fmg_tools.get_firewall_object_details(object_name=object_name, object_type=object_type, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

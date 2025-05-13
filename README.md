@@ -185,6 +185,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `object_type` (string), `adom` (string, optional, default: "root").
     *   **Returns**: A list of the specified firewall objects or an error message.
 
+13. **`get_fortimanager_firewall_object_details`**
+    *   **Description**: Retrieves details for a specific firewall object by its name and type. Requires object_name and object_type (e.g., 'firewall/address', 'firewall/service/custom'). ADOM defaults to 'root'.
+    *   **Parameters**: `object_name` (string), `object_type` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: Detailed information for the specified firewall object or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -195,7 +200,6 @@ This project is just getting started! Here are some ideas for future development
     *   **Device Management:**
         *(This category is now complete based on the initial list!)*
     *   **Policy & Objects Management:**
-        *   `get_firewall_object_details`: Get details for a specific firewall object.
         *   `query_firewall_policy`: Search policies based on source/destination, service, etc.
     *   **Scripts & Templates:**
         *   `list_cli_scripts`: List available CLI scripts.
@@ -251,8 +255,4 @@ Encountering issues? Here are a few common things to check:
 *   **FastMCP Server Logs**:
     *   When you run `fastmcp dev main.py` or `python main.py`, check the terminal output for any error messages from FastMCP or the tools themselves.
 *   **Tool Errors**:
-    *   If a specific tool returns an error, the error message might indicate whether the problem is with the API call, missing parameters, or FortiManager itself. The `list_...` and `get_...` tools usually return a string with an error message if something goes wrong.
-
----
-
-Let's make FortiManager management smarter and more accessible! ✨ 
+    *   If a specific tool returns an error, the error message might indicate whether the problem is with the API call, missing parameters, or FortiManager itself. The `

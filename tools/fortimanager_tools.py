@@ -709,6 +709,49 @@ def list_firewall_objects(object_type: str, adom: str = "root"):
     except Exception as e:
         return f"Exception listing objects of type '{object_type}': {e}"
 
+# @mcp.tool()
+def get_firewall_object_details(object_name: str, object_type: str, adom: str = "root"):
+    """
+    Retrieves details for a specific firewall object by its name and type.
+    Requires object_name and object_type (e.g., 'firewall/address', 'firewall/service/custom').
+    ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not object_name or not object_type:
+        return "Error: object_name and object_type parameters are required."
+
+    try:
+        # API URL for specific firewall object details.
+        # Example: /pm/config/adom/{adom}/obj/{object_type}/{object_name}
+        api_url = f"/pm/config/adom/{adom}/obj/{object_type.strip()}/{object_name.strip()}"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            object_details = response_data.get("data", response_data)
+            if not object_details:
+                 return f"No details found for object '{object_name}' of type '{object_type}' in ADOM '{adom}' at '{api_url}'."
+            return {
+                "message": f"Successfully retrieved details for object '{object_name}' of type '{object_type}'.",
+                "object_name": object_name,
+                "object_type": object_type,
+                "adom": adom,
+                "details": object_details
+            }
+        elif code == 0:
+            return f"Query for object '{object_name}' (type '{object_type}') at '{api_url}' was successful, but no details were returned."
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "not found" in error_message.lower() or "No such an entry" in error_message:
+                 return f"Error: Object '{object_name}' of type '{object_type}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving details for object '{object_name}' (type '{object_type}'): {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving details for object '{object_name}' (type '{object_type}'): {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -851,6 +894,21 @@ if __name__ == '__main__':
         #         print(f"  ... and {custom_services_result['object_count'] - 3} more objects.")
         # else:
         #     print(custom_services_result)
+
+        # Test get_firewall_object_details
+        # print("\n--- Get Firewall Object Details (example: an address object) ---")
+        # if isinstance(firewall_objects_result, dict) and \
+        #    firewall_objects_result.get("objects") and \
+        #    len(firewall_objects_result["objects"]) > 0 and \
+        #    isinstance(firewall_objects_result["objects"][0], dict) and \
+        #    'name' in firewall_objects_result["objects"][0]:
+        #     test_object_name = firewall_objects_result["objects"][0]['name']
+        #     test_object_type = "firewall/address" # Assuming the first list was for this type
+        #     print(f"Getting details for object: {test_object_name}, type: {test_object_type}")
+        #     object_detail_result = get_firewall_object_details(object_name=test_object_name, object_type=test_object_type, adom="root")
+        #     print(object_detail_result)
+        # else:
+        #     print("Skipping get_firewall_object_details test as no object name/type could be determined from previous tests.")
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
