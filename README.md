@@ -220,6 +220,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `adom_name` (string).
     *   **Returns**: An object containing the ADOM details, or an error message.
 
+20. **`list_fortimanager_vdoms_on_device`**
+    *   **Description**: Lists Virtual Domains (VDOMs) for a specified device in FortiManager. Requires device_name. ADOM defaults to 'root'.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: A list of VDOM names or VDOM data, or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -235,8 +240,7 @@ This project is just getting started! Here are some ideas for future development
         *(This category is now complete! Consider adding advanced template management or script versioning in the future.)*
     *   **ADOM Management:**
         *(This category is now complete!)*
-    *   **Device & VDOM Insights:** (New Category)
-        *   `list_vdoms_on_device`: List Virtual Domains (VDOMs) for a specified device.
+    *   **Device & VDOM Insights:**
         *   `get_device_ha_status`: Retrieve the High Availability (HA) status for a specific device.
     *   **FortiGuard & System (FortiManager specific):**
         *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).

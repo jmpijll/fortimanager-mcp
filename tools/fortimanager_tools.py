@@ -1046,8 +1046,8 @@ def get_adom_details(adom_name: str):
 # @mcp.tool()
 def list_vdoms_on_device(device_name: str, adom: str = "root"):
     """
-    Lists Virtual Domains (VDOMs) on a specific device in FortiManager.
-    Requires device_name and adom. ADOM defaults to 'root'.
+    Lists Virtual Domains (VDOMs) for a specified device in FortiManager.
+    Requires device_name. ADOM defaults to 'root'.
     """
     client = initialize_fmg_api_client()
     if not client:
@@ -1057,32 +1057,43 @@ def list_vdoms_on_device(device_name: str, adom: str = "root"):
         return "Error: device_name parameter is required."
 
     try:
-        # API URL for listing VDOMs on a device.
-        api_url = f"/dvmdb/adom/{adom}/device/{device_name}/config/system/vdom"
+        # API URL for listing VDOMs on a specific device.
+        # Example: /dvmdb/adom/{adom}/device/{device_name}/vdom
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name.strip()}/vdom"
         
-        code, response_data = client.get(api_url)
+        response = client.get(api_url)
+        
+        if response and response.get('status', {}).get('code') == 0:
+            # Successfully listed VDOMs.
+            vdom_list = response.get('data', []) # 'data' usually contains the list
+            
+            # The response structure for VDOMs can vary.
+            # Often it's a list of objects, each with a 'name' or 'vdom_name' field.
+            # We'll try to extract names, but return the full data if names aren't obvious.
+            if vdom_list and isinstance(vdom_list, list) and all(isinstance(item, dict) for item in vdom_list):
+                extracted_vdoms = []
+                for item in vdom_list:
+                    if 'name' in item:
+                        extracted_vdoms.append(item['name'])
+                    elif 'vdom_name' in item:
+                        extracted_vdoms.append(item['vdom_name'])
+                    elif 'oid' in item and 'op_status' in item : # another common pattern from FMG
+                         extracted_vdoms.append(item) # return full object if just oid and op_status
+                    # Add other potential name fields if known
+                if extracted_vdoms and len(extracted_vdoms) == len(vdom_list): # if all items had a name
+                    return {"vdoms": extracted_vdoms, "count": len(extracted_vdoms)}
+                else: # If names couldn't be reliably extracted for all, return the raw data
+                    return {"vdom_data": vdom_list, "count": len(vdom_list)}
 
-        if code == 0 and response_data:
-            vdom_list = response_data.get("data", [])
-            if not vdom_list:
-                return f"No VDOMs found on device '{device_name}' in ADOM '{adom}' at '{api_url}'."
-            return {
-                "message": f"Successfully retrieved VDOMs for device '{device_name}' in ADOM '{adom}'.",
-                "device_name": device_name,
-                "adom": adom,
-                "vdom_count": len(vdom_list),
-                "vdoms": vdom_list
-            }
-        elif code == 0:
-            return f"Query for VDOMs on device '{device_name}' in ADOM '{adom}' at '{api_url}' was successful, but no data was returned or data format was unexpected: {response_data}"
+            return {"vdom_data": vdom_list if vdom_list else "No VDOMs found or VDOMs not enabled.", "count": len(vdom_list) if vdom_list else 0}
+        elif response:
+            error_msg = response.get('status', {}).get('message', 'Unknown error')
+            return f"Error listing VDOMs for device '{device_name}' in ADOM '{adom}': {error_msg} (Code: {response.get('status', {}).get('code')})"
         else:
-            error_message = response_data.get('status', {}).get('message', 'Unknown error')
-            if code == -3 or "Object not exist" in error_message or "No such device" in error_message or "No such an entry" in error_message:
-                return f"Error: Device '{device_name}' or VDOM path not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
-            return f"Error listing VDOMs on device '{device_name}': {error_message} (Code: {code})"
-
+            return f"Failed to list VDOMs for device '{device_name}' in ADOM '{adom}'. No response or empty response from FortiManager."
+            
     except Exception as e:
-        return f"Exception listing VDOMs on device '{device_name}': {e}"
+        return f"Exception listing VDOMs for device '{device_name}' in ADOM '{adom}': {e}"
 
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':

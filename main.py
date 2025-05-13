@@ -132,6 +132,10 @@ def list_adoms_wrapper():
 def get_adom_details_wrapper(adom_name: str):
     return fmg_tools.get_adom_details(adom_name=adom_name)
 
+@mcp.tool(name="list_fortimanager_vdoms_on_device", description=fmg_tools.list_vdoms_on_device.__doc__)
+def list_vdoms_on_device_wrapper(device_name: str, adom: str = "root"):
+    return fmg_tools.list_vdoms_on_device(device_name=device_name, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.
