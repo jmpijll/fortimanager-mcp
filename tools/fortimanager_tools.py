@@ -449,6 +449,68 @@ def list_device_interfaces(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving interfaces for '{device_name}': {e}"
 
+# @mcp.tool()
+def get_device_routing_table(device_name: str, adom: str = "root"):
+    """
+    Retrieves the routing table for a specific device in FortiManager.
+    Device name is required. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # API path for device routing table. This is often a monitor-type call.
+        # Example paths from various FortiManager API versions/contexts:
+        # - /monitor/router/select (with device specified in payload)
+        # - /dvmdb/adom/{adom}/device/{device_name}/monitor/router/select
+        # - /monitor/device/{device_name}/routing-table
+        # The exact path will depend on how pyfmg structures calls to monitor endpoints.
+        
+        # Using a common pattern for device-specific monitor calls.
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name}/monitor/router/select" 
+        
+        # This endpoint might expect specific parameters in the payload for `client.get()` if it's more like a POST,
+        # or if `client.get()` can send a body, or it might be an `client.execute()` call.
+        # For a simple retrieval, a GET to this URL might suffice or return available sub-monitors.
+        # Actual FortiManager API might require GET to /dvmdb/adom/{adom}/device/{device_name}/monitor/router/ipv4 (or ipv6 or all)
+        # For now, we assume /select gives a general overview or list if not the full table directly.
+        code, response_data = client.get(api_url) 
+
+        if code == 0 and response_data and isinstance(response_data.get("data"), list):
+            routing_table = response_data["data"]
+            if not routing_table:
+                return f"Routing table for device '{device_name}' in ADOM '{adom}' at '{api_url}' is empty or not found."
+            return {
+                "message": f"Successfully retrieved routing table for device '{device_name}' in ADOM '{adom}'.",
+                "device_name": device_name,
+                "adom": adom,
+                "route_count": len(routing_table),
+                "routing_table": routing_table
+            }
+        elif code == 0: # Data format unexpected or empty
+            # It might be that the response_data itself is the list of routes if data field is not used for lists by this endpoint
+            if isinstance(response_data, list):
+                return {
+                    "message": f"Successfully retrieved routing table for device '{device_name}' in ADOM '{adom}'.",
+                    "device_name": device_name,
+                    "adom": adom,
+                    "route_count": len(response_data),
+                    "routing_table": response_data
+                }
+            return f"Retrieved data for device '{device_name}' routing table at '{api_url}', but the format was unexpected or empty: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message or "Monitor command failed" in error_message:
+                 return f"Error: Device '{device_name}' or routing table monitor path '{api_url}' not found/failed in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving routing table for device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving routing table for '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -515,6 +577,22 @@ if __name__ == '__main__':
         # else:
         #     print("Skipping list_device_interfaces test as no device name was determined.")
         
+        # Test get_device_routing_table
+        # print("\n--- Get Device Routing Table ---")
+        # if 'test_device_name' in locals() and test_device_name:
+        #     print(f"Getting routing table for device: {test_device_name}")
+        #     routing_table_result = get_device_routing_table(device_name=test_device_name, adom="root")
+        #     if isinstance(routing_table_result, dict) and "routing_table" in routing_table_result:
+        #         print(f"Found {routing_table_result.get('route_count', 0)} routes.")
+        #         for route in routing_table_result["routing_table"][:5]: # Print first 5 routes
+        #             print(f"  - Dest: {route.get('destination', 'N/A')}, Gateway: {route.get('gateway', 'N/A')}, Interface: {route.get('interface', 'N/A')}")
+        #         if routing_table_result.get('route_count', 0) > 5:
+        #             print(f"  ... and {routing_table_result['route_count'] - 5} more routes.")
+        #     else:
+        #         print(routing_table_result)
+        # else:
+        #     print("Skipping get_device_routing_table test as no device name was determined.")
+
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
     except Exception as e:

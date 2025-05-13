@@ -66,6 +66,10 @@ def retrieve_device_config_from_device_wrapper(device_name: str, adom: str = "ro
 def list_device_interfaces_wrapper(device_name: str, adom: str = "root"):
     return fmg_tools.list_device_interfaces(device_name=device_name, adom=adom)
 
+@mcp.tool(name="get_fortimanager_device_routing_table", description=fmg_tools.get_device_routing_table.__doc__)
+def get_device_routing_table_wrapper(device_name: str, adom: str = "root"):
+    return fmg_tools.get_device_routing_table(device_name=device_name, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

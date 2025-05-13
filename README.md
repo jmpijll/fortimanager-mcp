@@ -160,6 +160,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: A list of interface details or an error message.
 
+8.  **`get_fortimanager_device_routing_table`**
+    *   **Description**: Retrieves the routing table for a specific device in FortiManager.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: The device's routing table information or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -168,7 +173,7 @@ This project is just getting started! Here are some ideas for future development
 
 *   **More Tools!**
     *   **Device Management:**
-        *   `get_device_routing_table`: Fetch the routing table for a device.
+        *(This category is now complete based on the initial list!)*
     *   **Policy & Objects Management:**
         *   `get_policy_package_details`: Get more details about a specific policy package.
         *   `list_firewall_policies`: List firewall policies within a policy package.
