@@ -67,7 +67,7 @@ import os
 from dotenv import load_dotenv
 from pyfmg import FortiManager as FortiManagerAPI # Use pyfmg
 import urllib3
-from typing import Annotated
+from typing import Annotated, List, Dict
 from pydantic import Field
 
 # Assuming 'fastmcp' instance is passed or imported if @mcp.tool decorator is used from main.py
@@ -1206,6 +1206,49 @@ def get_fortimanager_api_version() -> dict:
             raise ValueError(f"Error getting FortiManager API version: {error_msg} (Code: {code})")
     except Exception as e:
         raise RuntimeError(f"Exception getting FortiManager API version: {e}")
+
+@mcp.tool()
+def install_policy_package(
+    package_name: Annotated[str, Field(description="Name of the policy package to install")],
+    scope: Annotated[List[Dict[str, str]], Field(description="List of targets, each with 'name' (device) and 'vdom'")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
+    """
+    Installs a policy package to its targets.
+    Uses the /securityconsole/install/package endpoint (FortiManager JSON API @Web).
+    Parameters:
+      - package_name: Name of the policy package to install.
+      - scope: List of dicts, each with 'name' (device) and 'vdom'.
+      - adom: Administrative Domain (default: 'root').
+    Returns a dict with task ID and status, or raises on error.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    if not package_name:
+        raise ValueError("package_name parameter is required.")
+    if not scope or not isinstance(scope, list):
+        raise ValueError("scope parameter must be a non-empty list of dicts with 'name' and 'vdom'.")
+    try:
+        api_url = "/securityconsole/install/package"
+        payload = {
+            "adom": adom,
+            "pkg": package_name,
+            "scope": scope
+        }
+        code, response_data = client.execute(api_url, data=payload)
+        if code == 0 and response_data:
+            # Usually returns a task ID for tracking the install job
+            return {
+                "message": f"Install triggered for policy package '{package_name}' in ADOM '{adom}'.",
+                "task_id": response_data.get("taskid"),
+                "details": response_data
+            }
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error installing policy package '{package_name}': {error_message} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception installing policy package '{package_name}': {e}")
 
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
