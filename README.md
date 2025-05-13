@@ -250,12 +250,15 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `scope` (list of dicts with 'name' and 'vdom', required), `adom` (string, optional, default: "root").
     *   **Returns**: A dict with task ID and status, or an error message.
 
+11. **`get_task_status`**
+    *   **Description**: Checks the status of a background FortiManager task by its ID. Uses the /task/task/{task_id} endpoint (FortiManager 7.4 API @Web).
+    *   **Parameters**: `task_id` (string, required).
+    *   **Returns**: A dict with task status details, or an error message.
+
 ## 🔮 Future Enhancements
 
 Planned features for future development:
 
-* **Installation & Task Management:**
-    * `get_task_status`: Check the status of a background FortiManager task by its ID.
 * **Logging & Reporting:**
     * `get_fortimanager_event_logs`: Retrieve FortiManager event logs with basic filtering options (e.g., severity, time range).
 * **Configuration & Backup:**

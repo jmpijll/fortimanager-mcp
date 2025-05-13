@@ -1287,6 +1287,35 @@ def install_device_config(
     except Exception as e:
         raise RuntimeError(f"Exception installing device config: {e}")
 
+@mcp.tool()
+def get_task_status(
+    task_id: Annotated[str, Field(description="The task ID to check status for")]
+) -> dict:
+    """
+    Checks the status of a background FortiManager task by its ID.
+    Uses the /task/task/{task_id} endpoint (FortiManager 7.4 API @Web).
+    Parameters:
+      - task_id: The task ID to check status for.
+    Returns a dict with task status details, or raises on error.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    if not task_id:
+        raise ValueError("task_id parameter is required.")
+    try:
+        api_url = f"/task/task/{task_id}"
+        code, response_data = client.get(api_url)
+        if code == 0 and response_data:
+            return response_data.get("data", response_data)
+        elif code == 0:
+            return {}
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error getting task status for task_id '{task_id}': {error_message} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception getting task status for task_id '{task_id}': {e}")
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
