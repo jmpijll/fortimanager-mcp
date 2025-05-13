@@ -1179,6 +1179,34 @@ def list_available_firmware_versions(
     except Exception as e:
         raise RuntimeError(f"Exception listing firmware versions for model '{device_model}': {e}")
 
+@mcp.tool()
+def get_fortimanager_api_version() -> dict:
+    """
+    Gets the FortiManager API version and build number.
+    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
+    Returns a dict with version and build information.
+    Raises RuntimeError if the API client is not initialized or the call fails.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    try:
+        # FortiManager 7.4 API endpoint for system status (contains version/build):
+        api_url = "/sys/status"
+        code, response_data = client.get(api_url)
+        if code == 0:
+            data = response_data.get("data", response_data)
+            return {
+                "version": data.get("version"),
+                "build": data.get("build"),
+                "full_status": data
+            }
+        else:
+            error_msg = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error getting FortiManager API version: {error_msg} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception getting FortiManager API version: {e}")
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:

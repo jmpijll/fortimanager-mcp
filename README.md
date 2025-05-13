@@ -235,12 +235,15 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_model` (string, required) - The device model to list available firmware versions for.
     *   **Returns**: A list of firmware version details or an error message.
 
+8.  **`get_fortimanager_api_version`**
+    *   **Description**: Gets the FortiManager API version and build number.
+    *   **Parameters**: None.
+    *   **Returns**: A dict with version and build information, or an error message.
+
 ## 🔮 Future Enhancements
 
 Planned features for future development:
 
-* **FortiGuard & System (FortiManager specific):**
-    * `get_fortimanager_api_version`: Get the FortiManager API version and build number.
 * **Installation & Task Management:**
     * `install_policy_package`: Install a policy package to its targets. (Use with caution!)
     * `install_device_config`: Install device-level settings to a device. (Use with caution!)
