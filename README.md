@@ -210,6 +210,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `script_name` (string), `device_name` (string), `adom` (string, optional, default: "root"), `vdom` (string, optional, default: "root").
     *   **Returns**: A status message indicating success or failure of script execution initiation, along with any details from FortiManager.
 
+18. **`list_fortimanager_adoms`**
+    *   **Description**: Lists all Administrative Domains (ADOMs) in FortiManager.
+    *   **Parameters**: None.
+    *   **Returns**: A list of ADOM names or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -224,7 +229,6 @@ This project is just getting started! Here are some ideas for future development
     *   **Scripts & Templates:**
         *(This category is now complete! Consider adding advanced template management or script versioning in the future.)*
     *   **ADOM Management:**
-        *   `list_adoms`: List all Administrative Domains (ADOMs).
         *   `get_adom_details`: Get specific details for an ADOM.
     *   **Device & VDOM Insights:** (New Category)
         *   `list_vdoms_on_device`: List Virtual Domains (VDOMs) for a specified device.

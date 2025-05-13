@@ -124,6 +124,10 @@ def get_cli_script_content_wrapper(script_name: str, adom: str = "root"):
 def run_cli_script_on_device_wrapper(script_name: str, device_name: str, adom: str = "root", vdom: str = "root"):
     return fmg_tools.run_cli_script_on_device(script_name=script_name, device_name=device_name, adom=adom, vdom=vdom)
 
+@mcp.tool(name="list_fortimanager_adoms", description=fmg_tools.list_adoms.__doc__)
+def list_adoms_wrapper():
+    return fmg_tools.list_adoms()
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

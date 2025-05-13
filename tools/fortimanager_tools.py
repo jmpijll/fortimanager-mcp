@@ -975,6 +975,37 @@ def run_cli_script_on_device(script_name: str, device_name: str, adom: str = "ro
     except Exception as e:
         return f"Exception executing CLI script '{script_name}' on device '{device_name}' in ADOM '{adom}': {e}"
 
+# @mcp.tool()
+def list_adoms():
+    """
+    Lists all Administrative Domains (ADOMs) in FortiManager.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    try:
+        # API URL for listing all ADOMs.
+        # Based on documentation, /dvmdb/adom/ seems standard for FortiManager.
+        api_url = "/dvmdb/adom/"
+        
+        response = client.get(api_url)
+        
+        if response and response.get('status', {}).get('code') == 0:
+            # Successfully listed ADOMs.
+            adom_list = response.get('data', []) # 'data' usually contains the list of ADOMs
+            # Ensure we extract just the names or relevant details if the structure is complex
+            # For now, returning the raw list under 'data' or a simplified list if possible.
+            if isinstance(adom_list, list) and all(isinstance(item, dict) and 'name' in item for item in adom_list):
+                return {"status": "success", "adoms": [adom.get('name') for adom in adom_list], "count": len(adom_list), "raw_response": response}
+            return {"status": "success", "adoms": adom_list, "raw_response": response} # Return full data if not simple name list
+        else:
+            error_message = response.get('status', {}).get('message', 'Unknown error')
+            return f"Error listing ADOMs: {error_message} (Full response: {response})"
+            
+    except Exception as e:
+        return f"Exception listing ADOMs: {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
