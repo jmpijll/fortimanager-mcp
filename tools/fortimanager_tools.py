@@ -67,6 +67,8 @@ import os
 from dotenv import load_dotenv
 from pyfmg import FortiManager as FortiManagerAPI # Use pyfmg
 import urllib3
+from typing import Annotated
+from pydantic import Field
 
 # Assuming 'fastmcp' instance is passed or imported if @mcp.tool decorator is used from main.py
 # from fastmcp import FastMCP
@@ -124,266 +126,241 @@ def initialize_fmg_api_client():
 # initialize_fmg_api_client() 
 
 @mcp.tool() # Decorate with FastMCP's tool decorator
-def list_devices(adom: str = "root"):
+def list_devices(
+    adom: Annotated[str, Field(description="The Administrative Domain to query")] = "root"
+) -> list[dict]:
     """
     Lists devices in FortiManager, optionally filtered by ADOM.
     Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
     ADOM defaults to 'root' if not provided.
+    Returns a list of device details.
+    Raises ValueError if required parameters are missing or API call fails.
     """
     client = initialize_fmg_api_client()
     if not client:
-        return "FortiManager API client not initialized."
-
+        raise RuntimeError("FortiManager API client not initialized.")
     try:
-        # The URL for listing devices in FortiManager's JSON RPC API is typically:
-        # '/dvmdb/adom/{adom}/device' for devices in a specific ADOM
-        # '/dvmdb/device' for all devices (might require different permissions or handling)
-        # We'll use the ADOM-specific one as it's more common.
-        
-        # The python-fortimanagerapi library should provide a method for this.
-        # Example based on typical RPC structure (actual method name may vary):
-        # response = client.get(f"/dvmdb/adom/{adom}/device")
-        
-        # Let's assume the library has a more direct method based on common patterns:
-        # response = client.get_devices(adom=adom)
-        # For now, using a placeholder for the exact method call.
-        # We need to find the correct method in 'python-fortimanagerapi' documentation.
-        
-        # Based on "How to FortiManager API" docs (8.7.2), the URL seems to be:
-        # GET /dvmdb/adom/{adom}/device
-        # The library might abstract this as:
-        # data = {'url': f'/dvmdb/adom/{adom}/device'}
-        # response = client.get(data) or client.get(url=f'/dvmdb/adom/{adom}/device')
-        
-        # Let's try a direct URL call assuming 'client.get()' takes a URL path.
-        # This is a common pattern for API wrapper libraries.
-        params = {
-            "url": f"/dvmdb/adom/{adom}/device"
-        }
-        # Some libraries might expect 'data=params' or direct kwargs
-        code, response_data = client.get(params["url"]) # Or however the library expects the call
-
-        if code == 0: # FortiManager API success code is typically 0
-            return response_data.get("data", response_data) # 'data' often holds the actual list
-        else:
-            return f"Error listing devices: {response_data.get('status', {}).get('message', 'Unknown error')} (Code: {code})"
-
-    except Exception as e:
-        return f"Exception listing devices: {e}"
-
-@mcp.tool() # Decorate with FastMCP's tool decorator
-def get_system_status():
-    """
-    Retrieves the system status from FortiManager.
-    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
-    """
-    client = initialize_fmg_api_client()
-    if not client:
-        return "FortiManager API client not initialized."
-
-    try:
-        # Based on "How to FortiManager API" docs (18.3), the URL for system status is:
-        # GET /sys/status
-        # The library might abstract this as:
-        # response = client.get_system_status()
-        # Or using a direct URL call:
-        params = {
-            "url": "/sys/status"
-        }
+        params = {"url": f"/dvmdb/adom/{adom}/device"}
         code, response_data = client.get(params["url"])
-
         if code == 0:
             return response_data.get("data", response_data)
         else:
-            return f"Error getting system status: {response_data.get('status', {}).get('message', 'Unknown error')} (Code: {code})"
-            
+            error_msg = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error listing devices: {error_msg} (Code: {code})")
     except Exception as e:
-        return f"Exception getting system status: {e}"
+        raise RuntimeError(f"Exception listing devices: {e}")
+
+@mcp.tool()
+def get_system_status() -> dict:
+    """
+    Retrieves the system status from FortiManager.
+    Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
+    Returns system status information as a dict.
+    Raises RuntimeError if the API client is not initialized or the call fails.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        raise RuntimeError("FortiManager API client not initialized.")
+    try:
+        params = {"url": "/sys/status"}
+        code, response_data = client.get(params["url"])
+        if code == 0:
+            return response_data.get("data", response_data)
+        else:
+            error_msg = response_data.get('status', {}).get('message', 'Unknown error')
+            raise ValueError(f"Error getting system status: {error_msg} (Code: {code})")
+    except Exception as e:
+        raise RuntimeError(f"Exception getting system status: {e}")
+
+@mcp.tool()
+def get_fortimanager_fortiguard_status(adom: str = "root"):
+    """
+    Retrieves the FortiGuard service status from FortiManager.
+    This includes AV/IPS DB versions, license information, and service availability.
+    ADOM parameter is typically not required for global FortiGuard status but included for consistency.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    try:
+        # The API endpoint for FortiGuard status is often GET /pm/config/global/fgd/status
+        # Or similar global paths like /sys/fortiguard/status
+        # For pyfmg, this would be a get call.
+        api_url = "/pm/config/global/fgd/status" # As identified from web search
+
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            # FortiGuard status is usually in the 'data' field or the root of the response
+            status_details = response_data.get("data", response_data)
+            if not status_details:
+                return {
+                    "message": f"FortiGuard status query to '{api_url}' was successful but returned no data.",
+                    "response_code": code,
+                    "raw_response": response_data
+                }
+            return {
+                "message": "Successfully retrieved FortiManager FortiGuard status.",
+                "fortiguard_status": status_details,
+                "response_code": code,
+                "raw_response": response_data # Optional: for full details
+            }
+        elif code == 0: # Successful call but empty response_data
+            return {
+                "message": f"FortiGuard status query to '{api_url}' was successful but the response was empty.",
+                "response_code": code,
+                "raw_response": response_data
+            }
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            error_api_code = response_data.get('status', {}).get('code', code) if isinstance(response_data, dict) else code
+            return f"Error retrieving FortiManager FortiGuard status: {error_message} (Code: {error_api_code}, API URL: {api_url})"
+
+    except Exception as e:
+        return f"Exception retrieving FortiManager FortiGuard status: {e}"
 
 @mcp.tool() # Decorate with FastMCP's tool decorator
-def list_policy_packages(adom: str = "root"):
+def list_policy_packages(
+    adom: Annotated[str, Field(description="The Administrative Domain to query")] = "root"
+) -> list[dict]:
     """
     Lists policy packages in FortiManager for a specific ADOM.
     Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
     ADOM defaults to 'root' if not provided.
+    Returns a list of policy package details.
+    Raises ValueError if required parameters are missing or API call fails.
     """
     client = initialize_fmg_api_client()
     if not client:
-        return "FortiManager API client not initialized."
-
+        raise RuntimeError("FortiManager API client not initialized.")
     try:
-        # URL based on FortiManager API documentation (e.g., section 9.2.2)
-        # /pm/pkg/adom/{adom_name} or similar might be the direct path for listing packages.
-        # Some API versions might use /pm/pkg/adom/{adom_name}/package
-        # We will use the common one found in documentation for listing within an ADOM.
         api_url = f"/pm/pkg/adom/{adom}"
-        
-        # pyfmg's get method typically returns (code, data)
         code, response_data = client.get(api_url)
-
         if code == 0 and response_data:
-            # The actual list of packages is often in a nested 'data' field, 
-            # or could be the top-level list if 'data' field is not present but result is a list.
-            # Or it might be under response_data['data']['pkg_list'] or similar. 
-            # We will try to be a bit flexible here.
             if isinstance(response_data.get("data"), list):
-                return response_data["data"] # if response is {"data": [...packages...]}
+                return response_data["data"]
             elif isinstance(response_data, list):
-                return response_data # if response is [...packages...]
+                return response_data
             else:
-                # Fallback or more specific extraction if needed based on actual API response structure
-                return response_data.get("data", response_data) 
+                return response_data.get("data", response_data)
         elif code == 0 and not response_data:
-            return [] # No packages or empty response
+            return []
         else:
             error_message = response_data.get('status', {}).get('message', 'Unknown error')
-            return f"Error listing policy packages: {error_message} (Code: {code})"
-
+            raise ValueError(f"Error listing policy packages: {error_message} (Code: {code})")
     except Exception as e:
-        return f"Exception listing policy packages: {e}"
+        raise RuntimeError(f"Exception listing policy packages: {e}")
 
 @mcp.tool()
-def get_device_details(device_name: str, adom: str = "root"):
+def get_device_details(
+    device_name: Annotated[str, Field(description="Name of the device")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
     """
     Retrieves detailed information for a specific device in FortiManager.
     Requires FORTIMANAGER_HOST and FORTIMANAGER_API_KEY in .env file.
     Device name is required. ADOM defaults to 'root' if not provided.
+    Returns device details as a dict.
+    Raises ValueError if device is not found or API call fails.
     """
     client = initialize_fmg_api_client()
     if not client:
-        return "FortiManager API client not initialized."
-    
+        raise RuntimeError("FortiManager API client not initialized.")
     if not device_name:
-        return "Error: device_name parameter is required."
-
+        raise ValueError("device_name parameter is required.")
     try:
-        # API endpoint to get specific device details.
-        # Example: /dvmdb/adom/{adom}/device/{device_name}
-        # The exact fields returned will depend on the FortiManager API version and device type.
         api_url = f"/dvmdb/adom/{adom}/device/{device_name}"
-        
         code, response_data = client.get(api_url)
-
         if code == 0 and response_data:
-            # The device details are usually within the 'data' field of the response.
-            # It could be a single object or a list with one object if the API supports filtering.
-            # For a direct get by name, it's typically a single object.
-            return response_data.get("data", response_data) 
-        elif code == 0 and not response_data: # Should ideally not happen if device exists
-            return f"No details found for device '{device_name}' in ADOM '{adom}'. It might not exist or the response was empty."
+            return response_data.get("data", response_data)
+        elif code == 0 and not response_data:
+            raise ValueError(f"No details found for device '{device_name}' in ADOM '{adom}'.")
         else:
             error_message = response_data.get('status', {}).get('message', 'Unknown error')
-            # Specific error code for "Object not found" might be -3 for some Fortinet APIs.
             if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
-                 return f"Error: Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
-            return f"Error retrieving details for device '{device_name}': {error_message} (Code: {code})"
-
+                raise ValueError(f"Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}")
+            raise ValueError(f"Error retrieving details for device '{device_name}': {error_message} (Code: {code})")
     except Exception as e:
-        return f"Exception retrieving device details for '{device_name}': {e}"
+        raise RuntimeError(f"Exception retrieving device details for '{device_name}': {e}")
 
 @mcp.tool()
-def get_device_config_status(device_name: str, adom: str = "root"):
+def get_device_config_status(
+    device_name: Annotated[str, Field(description="Name of the device")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
     """
     Retrieves the configuration synchronization status for a specific device.
     Interprets the 'conf_status' field from the device details.
     Device name is required. ADOM defaults to 'root'.
+    Returns a dict with raw and interpreted config status.
+    Raises ValueError if device is not found or API call fails.
     """
     client = initialize_fmg_api_client()
     if not client:
-        return "FortiManager API client not initialized."
-
+        raise RuntimeError("FortiManager API client not initialized.")
     if not device_name:
-        return "Error: device_name parameter is required."
-
+        raise ValueError("device_name parameter is required.")
     try:
         api_url = f"/dvmdb/adom/{adom}/device/{device_name}"
         code, response_data = client.get(api_url)
-
         if code == 0 and response_data and isinstance(response_data.get("data"), dict):
             device_info = response_data["data"]
-            conf_status_val = device_info.get("conf_status") # Standard field for config status
-            
-            # Interpret conf_status (common values, might need adjustment based on FMG version)
-            # 0: unknown, 1: synchronized, 2: out-of-sync, 3: auto-update, 4: never synchronized (sometimes), 5: modified (sometimes)
+            conf_status_val = device_info.get("conf_status")
             status_map = {
                 0: "Unknown",
                 1: "Synchronized",
                 2: "Out-of-Sync",
                 3: "Auto-Update",
-                4: "Never Synchronized / Pending", # FMG 7.0.0 changed meaning slightly
+                4: "Never Synchronized / Pending",
                 5: "Modified / Unsynced Changes"
             }
-            
             status_description = status_map.get(conf_status_val, f"Raw conf_status: {conf_status_val}")
-            
-            # Return both raw value and description for clarity
             return {
                 "device_name": device_name,
                 "adom": adom,
                 "conf_status_raw": conf_status_val,
                 "config_status_description": status_description,
-                "details_url_checked": api_url # For reference
+                "details_url_checked": api_url
             }
-        elif code == 0: # Device found but data format unexpected or empty
-            return f"Device '{device_name}' found in ADOM '{adom}', but config status could not be determined from response: {response_data}"
+        elif code == 0:
+            raise ValueError(f"Device '{device_name}' found in ADOM '{adom}', but config status could not be determined from response: {response_data}")
         else:
             error_message = response_data.get('status', {}).get('message', 'Unknown error')
             if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
-                 return f"Error: Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
-            return f"Error retrieving config status for device '{device_name}': {error_message} (Code: {code})"
-
+                raise ValueError(f"Device '{device_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}")
+            raise ValueError(f"Error retrieving config status for device '{device_name}': {error_message} (Code: {code})")
     except Exception as e:
-        return f"Exception retrieving config status for '{device_name}': {e}"
+        raise RuntimeError(f"Exception retrieving config status for '{device_name}': {e}")
 
 @mcp.tool()
-def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
+def retrieve_device_config_from_device(
+    device_name: Annotated[str, Field(description="Name of the device")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
     """
     Triggers FortiManager to retrieve the latest configuration from a specified device.
     This action typically starts a task on FortiManager.
     Device name is required. ADOM defaults to 'root'.
-    Returns the task information if successful.
+    Returns information about the initiated task.
+    Raises ValueError if device is not found or API call fails.
     """
     client = initialize_fmg_api_client()
     if not client:
-        return "FortiManager API client not initialized."
-
+        raise RuntimeError("FortiManager API client not initialized.")
     if not device_name:
-        return "Error: device_name parameter is required."
-
+        raise ValueError("device_name parameter is required.")
     try:
-        # The API to trigger a configuration retrieval is often an 'exec' type or a POST to a specific URL.
-        # Example from FortiManager API docs (8.23): /dvmdb/adom/{adom}/device/{device_name}/retrieve (often a POST or specific exec method)
-        # Or it might be /sys/retrieve/device for some versions or contexts.
-        # pyfmg library might have an 'execute' or 'update' method for such actions.
-        # Let's assume it's a POST-like operation, often handled by `client.execute` or `client.update` or a specific named method.
-        # For pyfmg, often operations like this are under an 'exec' category, so URL might be a bit different if using a generic exec method.
-        # For now, let's try a common pattern which might be POSTing to a URL like this, or using an execute method.
-        # If pyfmg's .get() is only for GET, we might need .post() or .execute().
-        # The `pyfmg` library documentation shows an execute method: `fmg_instance.execute("securityconsole/install/package", ...)`
-        # This suggests the first argument to execute is the command path, and kwargs are parameters.
-
-        # Let's try using the execute method with a likely path.
-        # The URL for the actual RPC call might be something like `/dvmdb/adom/{adom_name}/device/{device_name}/cmd/retrieve`
-        # or the data payload might specify the action.
-
-        # Assuming an exec call structure based on general FortiManager API patterns for actions.
-        # The direct RPC target URL might be something like this, or the data part of a generic exec might point here.
         api_command_path = f"/dvmdb/adom/{adom}/device/{device_name}/cmd/retrieve"
-        
-        # The pyfmg `execute` method seems appropriate here. What it expects as `data` or `**params` for this specific command is key.
-        # Often, such commands don't require a complex body, just the action invoked on the URL/path.
-        # If `execute` takes the path as first arg and then kwargs for payload:
-        code, response_data = client.execute(api_command_path) # May need specific parameters based on pyfmg's execute method signature
-
+        code, response_data = client.execute(api_command_path)
         if code == 0 and response_data:
-            # Successful execution usually returns a task ID
             if response_data.get("data") and isinstance(response_data["data"], dict) and "task" in response_data["data"]:
                 return {
                     "message": f"Successfully initiated configuration retrieval for device '{device_name}' in ADOM '{adom}'.",
                     "task_id": response_data["data"]["task"],
                     "details": response_data["data"]
                 }
-            elif "task" in response_data: # If task ID is at the root of response_data
+            elif "task" in response_data:
                 return {
                     "message": f"Successfully initiated configuration retrieval for device '{device_name}' in ADOM '{adom}'.",
                     "task_id": response_data["task"],
@@ -391,16 +368,15 @@ def retrieve_device_config_from_device(device_name: str, adom: str = "root"):
                 }
             else:
                 return {"message": f"Configuration retrieval initiated for '{device_name}', but no task ID found in response.", "response": response_data}
-        elif code == 0: # Should have response_data if successful
-            return f"Configuration retrieval for '{device_name}' may have succeeded but response was empty or unexpected: {response_data}"
+        elif code == 0:
+            raise ValueError(f"Configuration retrieval for '{device_name}' may have succeeded but response was empty or unexpected: {response_data}")
         else:
             error_message = response_data.get('status', {}).get('message', 'Unknown error')
             if code == -3 or "Object not exist" in error_message or "No such device" in error_message:
-                 return f"Error: Device '{device_name}' not found in ADOM '{adom}' for config retrieval. (Code: {code}) - {error_message}"
-            return f"Error initiating config retrieval for device '{device_name}': {error_message} (Code: {code})"
-
+                raise ValueError(f"Device '{device_name}' not found in ADOM '{adom}' for config retrieval. (Code: {code}) - {error_message}")
+            raise ValueError(f"Error initiating config retrieval for device '{device_name}': {error_message} (Code: {code})")
     except Exception as e:
-        return f"Exception initiating config retrieval for '{device_name}': {e}"
+        raise RuntimeError(f"Exception retrieving config for '{device_name}': {e}")
 
 @mcp.tool()
 def list_device_interfaces(device_name: str, adom: str = "root"):

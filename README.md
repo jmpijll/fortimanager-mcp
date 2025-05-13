@@ -300,3 +300,40 @@ Encountering issues? Here are a few common things to check:
     *   When you run `fastmcp dev main.py` or `python main.py`, check the terminal output for any error messages from FastMCP or the tools themselves.
 *   **Tool Errors**:
     *   If a specific tool returns an error, the error message might indicate whether the problem is with the API call, missing parameters, or FortiManager itself.
+
+## 🛠️ Best Practices & API Documentation
+
+This project follows up-to-date Python and API best practices:
+
+- **Explicit type hints** are used for all tool parameters and return values, enabling automatic schema generation and better LLM integration.
+- **Parameter validation** is performed using `Annotated` and `pydantic.Field` ([FastMCP docs](https://github.com/jlowin/fastmcp/blob/main/docs/servers/tools.mdx#_snippet_2)), ensuring clear, validated input for all tools.
+- **Error handling**: Instead of returning error strings, tools now raise exceptions (e.g., `ValueError`, `RuntimeError`). FastMCP automatically converts these to structured error responses for clients ([see FastMCP error handling](https://github.com/jlowin/fastmcp/blob/main/docs/servers/tools.mdx#_snippet_9)).
+- **API usage**: All FortiManager API calls are made using the [pyfmg](https://github.com/context-labs/pyfmg) library, following its latest documentation and best practices.
+
+## ⚡️ Parameter Validation & Error Handling
+
+All tool parameters are validated using Python type hints and Pydantic's `Field` for descriptions and constraints. Example:
+
+```python
+from typing import Annotated
+from pydantic import Field
+
+@mcp.tool()
+def get_device_details(
+    device_name: Annotated[str, Field(description="Name of the device")],
+    adom: Annotated[str, Field(description="Administrative Domain")] = "root"
+) -> dict:
+    ...
+```
+
+If a required parameter is missing or invalid, or if an API call fails, the tool will raise an exception. FastMCP will return a structured error response to the client.
+
+## 📚 References
+- [FastMCP Documentation](https://github.com/jlowin/fastmcp)
+- [pyfmg Documentation](https://github.com/context-labs/pyfmg)
+- [Guide to writing a good README](https://abhiappmobiledeveloper.medium.com/guide-to-writing-on-readme-md-markdown-file-for-github-project-8aad4e4e2a15) @Web
+
+## 🐞 Known Issues
+- Ensure your `.env` file is present and correct; missing or invalid credentials will cause initialization errors.
+- If you encounter a `ValueError` or `RuntimeError` from a tool, check the error message for details on missing parameters or API issues.
+- For SSL issues, see the `FORTIMANAGER_VERIFY_SSL` section above.
