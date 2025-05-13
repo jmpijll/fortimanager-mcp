@@ -927,7 +927,53 @@ def get_cli_script_content(script_name: str, adom: str = "root"):
             return f"Error retrieving CLI script '{script_name}': {error_message} (Code: {code})"
 
     except Exception as e:
-        return f"Exception retrieving CLI script '{script_name}': {e}"
+        return f"Exception retrieving CLI script content for '{script_name}' in ADOM '{adom}': {e}"
+
+# @mcp.tool()
+def run_cli_script_on_device(script_name: str, device_name: str, adom: str = "root", vdom: str = "root"):
+    """
+    Executes a pre-defined CLI script on a target device/VDOM via FortiManager.
+    Requires script_name and device_name. ADOM and VDOM default to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not script_name:
+        return "Error: script_name parameter is required."
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # API URL for executing a CLI script on a device.
+        api_url = f"/dvmdb/adom/{adom}/script/execute"
+        
+        # Construct the payload for the API call.
+        # The 'scope' parameter targets the device.
+        # The 'script' parameter specifies the script to run.
+        payload = {
+            "adom": adom,
+            "script": script_name.strip(),
+            "scope": [
+                {
+                    "name": device_name.strip(),
+                    "vdom": vdom.strip()
+                }
+            ]
+        }
+        
+        response = client.execute(api_url, data=payload) # Using 'data' for POST/EXECUTE type requests typically
+        
+        if response and response.get('status', {}).get('code') == 0:
+            # Successful execution might return a task ID or other status info.
+            # For now, we'll return the full response for the user to interpret.
+            return {"status": "success", "message": f"Script '{script_name}' execution initiated on device '{device_name}' (VDOM: '{vdom}') in ADOM '{adom}'.", "details": response}
+        else:
+            error_message = response.get('status', {}).get('message', 'Unknown error')
+            return f"Error executing script '{script_name}' on device '{device_name}': {error_message} (Full response: {response})"
+            
+    except Exception as e:
+        return f"Exception executing CLI script '{script_name}' on device '{device_name}' in ADOM '{adom}': {e}"
 
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':

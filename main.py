@@ -120,6 +120,10 @@ def list_cli_scripts_wrapper(adom: str = "root"):
 def get_cli_script_content_wrapper(script_name: str, adom: str = "root"):
     return fmg_tools.get_cli_script_content(script_name=script_name, adom=adom)
 
+@mcp.tool(name="run_fortimanager_cli_script_on_device", description=fmg_tools.run_cli_script_on_device.__doc__)
+def run_cli_script_on_device_wrapper(script_name: str, device_name: str, adom: str = "root", vdom: str = "root"):
+    return fmg_tools.run_cli_script_on_device(script_name=script_name, device_name=device_name, adom=adom, vdom=vdom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

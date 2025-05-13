@@ -205,6 +205,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `script_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: The content of the CLI script and its details, or an error message.
 
+17. **`run_fortimanager_cli_script_on_device`**
+    *   **Description**: Executes a pre-defined CLI script on a target device/VDOM via FortiManager. Requires script_name and device_name. ADOM and VDOM default to 'root'.
+    *   **Parameters**: `script_name` (string), `device_name` (string), `adom` (string, optional, default: "root"), `vdom` (string, optional, default: "root").
+    *   **Returns**: A status message indicating success or failure of script execution initiation, along with any details from FortiManager.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -217,7 +222,7 @@ This project is just getting started! Here are some ideas for future development
     *   **Policy & Objects Management:**
         *(This category is now complete based on the initial list!)*
     *   **Scripts & Templates:**
-        *   `run_cli_script_on_device`: Execute a pre-defined CLI script on a target device/VDOM.
+        *(This category is now complete! Consider adding advanced template management or script versioning in the future.)*
     *   **ADOM Management:**
         *   `list_adoms`: List all Administrative Domains (ADOMs).
         *   `get_adom_details`: Get specific details for an ADOM.
