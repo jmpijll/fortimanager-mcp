@@ -136,6 +136,10 @@ def get_adom_details_wrapper(adom_name: str):
 def list_vdoms_on_device_wrapper(device_name: str, adom: str = "root"):
     return fmg_tools.list_vdoms_on_device(device_name=device_name, adom=adom)
 
+@mcp.tool(name="get_fortimanager_device_ha_status", description=fmg_tools.get_device_ha_status.__doc__)
+def get_device_ha_status_wrapper(device_name: str, adom: str = "root"):
+    return fmg_tools.get_device_ha_status(device_name=device_name, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.

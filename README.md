@@ -225,6 +225,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: A list of VDOM names or VDOM data, or an error message.
 
+21. **`get_fortimanager_device_ha_status`**
+    *   **Description**: Retrieves the High Availability (HA) status for a specific device from FortiManager. Requires device_name. ADOM defaults to 'root'.
+    *   **Parameters**: `device_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: An object containing HA status details, or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -241,7 +246,6 @@ This project is just getting started! Here are some ideas for future development
     *   **ADOM Management:**
         *(This category is now complete!)*
     *   **Device & VDOM Insights:**
-        *   `get_device_ha_status`: Retrieve the High Availability (HA) status for a specific device.
     *   **FortiGuard & System (FortiManager specific):**
         *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).
         *   `list_available_firmware_versions`: List firmware available on FortiManager for a device model.
@@ -294,4 +298,4 @@ Encountering issues? Here are a few common things to check:
 *   **FastMCP Server Logs**:
     *   When you run `fastmcp dev main.py` or `python main.py`, check the terminal output for any error messages from FastMCP or the tools themselves.
 *   **Tool Errors**:
-    *   If a specific tool returns an error, the error message might indicate whether the problem is with the API call, missing parameters, or FortiManager itself. The `
+    *   If a specific tool returns an error, the error message might indicate whether the problem is with the API call, missing parameters, or FortiManager itself.

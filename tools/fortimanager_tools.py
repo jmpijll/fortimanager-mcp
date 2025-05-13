@@ -1095,6 +1095,85 @@ def list_vdoms_on_device(device_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception listing VDOMs for device '{device_name}' in ADOM '{adom}': {e}"
 
+@mcp.tool() # Ensure this decorator is active
+def get_device_ha_status(device_name: str, adom: str = "root"):
+    """
+    Retrieves the High Availability (HA) status for a specific device from FortiManager.
+    Requires device_name. ADOM defaults to 'root'.
+    The HA status might be part of a general device status endpoint.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # Common API path for device status, which often includes HA information.
+        # Example: /dvmdb/adom/{adom}/device/{device_name}/status
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name.strip()}/status"
+        
+        code, response_data = client.get(api_url) # pyfmg returns (code, data)
+        
+        if code == 0 and response_data:
+            # Successfully retrieved device status.
+            status_payload = response_data.get('data', response_data) # Data could be at root or under 'data'
+            
+            ha_info = {}
+            if isinstance(status_payload, dict):
+                if 'ha' in status_payload and isinstance(status_payload['ha'], dict):
+                    ha_info = status_payload['ha']
+                else: # Check for top-level ha_ keys if a specific 'ha' dict isn't present
+                    for key, value in status_payload.items():
+                        if key.lower().startswith('ha_') or key.lower() == 'ha': # broader check
+                            ha_info[key] = value
+                
+                # If after checking, ha_info is still empty but status_payload is not,
+                # it means HA specific keys were not obvious. Return the whole payload for HA.
+                if not ha_info and status_payload:
+                    ha_info = status_payload 
+            elif isinstance(status_payload, list) and status_payload: # sometimes status is a list of status dicts
+                 # In this case, it's harder to pinpoint HA status without knowing the structure.
+                 # We'll return the first element if it's a dict, or the whole list.
+                 ha_info = status_payload[0] if isinstance(status_payload[0], dict) else status_payload
+
+            if not ha_info: # if status_payload itself was empty or not a dict/list we could parse
+                 return {
+                     "message": f"Device status retrieved for '{device_name}', but no specific HA information readily identifiable or status data is empty.",
+                     "device_name": device_name,
+                     "adom": adom,
+                     "response_code": code,
+                     "raw_response": response_data
+                 }
+
+            return {
+                "message": f"HA status information for device '{device_name}' in ADOM '{adom}'.",
+                "device_name": device_name,
+                "adom": adom,
+                "ha_details": ha_info, # Contains identified HA fields or the full status data
+                "response_code": code,
+                "raw_response": response_data # Include for full context
+            }
+        elif code == 0 and not response_data: # Successful but no data
+            return {
+                "message": f"Device status endpoint for '{device_name}' returned success but no data.",
+                "device_name": device_name,
+                "adom": adom,
+                "response_code": code,
+                "raw_response": response_data
+            }
+        else: # Error from API
+            error_message = response_data.get('status', {}).get('message', 'Unknown error') if isinstance(response_data, dict) else str(response_data)
+            error_api_code = response_data.get('status', {}).get('code', code) if isinstance(response_data, dict) else code # Use original code if status block not present
+
+            if error_api_code == -3 or "Object not exist" in error_message or "No such device" in error_message:
+                return f"Error: Device '{device_name}' not found in ADOM '{adom}' when fetching status. (Code: {error_api_code}) - {error_message}"
+            return f"Error retrieving HA status for device '{device_name}': {error_message} (Code: {error_api_code})"
+            
+    except Exception as e:
+        return f"Exception retrieving HA status for device '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
