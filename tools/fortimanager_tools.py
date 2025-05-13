@@ -836,6 +836,99 @@ def query_firewall_policies(
     except Exception as e:
         return f"Exception querying firewall policies in package '{package_name}': {e}"
 
+# @mcp.tool()
+def list_cli_scripts(adom: str = "root"):
+    """
+    Lists available CLI scripts in FortiManager for a specific ADOM.
+    ADOM defaults to 'root' if not provided.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    try:
+        # Common API path for listing CLI scripts.
+        # Examples: /pm/config/adom/{adom}/script/script  or /dvmdb/adom/{adom}/script/script
+        # Using /pm/config/ as scripts are often treated as configuration elements.
+        api_url = f"/pm/config/adom/{adom}/script/script"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            scripts = response_data.get("data")
+            if isinstance(scripts, list):
+                if not scripts:
+                    return f"No CLI scripts found in ADOM '{adom}' at '{api_url}'."
+                return {
+                    "message": f"Successfully retrieved CLI scripts for ADOM '{adom}'.",
+                    "adom": adom,
+                    "script_count": len(scripts),
+                    "scripts": scripts # List of script objects, usually with 'name', 'description', etc.
+                }
+            else:
+                return f"CLI scripts data for ADOM '{adom}' is not in the expected list format: {scripts}"
+        elif code == 0:
+             return f"Query for CLI scripts in ADOM '{adom}' was successful, but no data was returned or format was unexpected: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "not found" in error_message.lower() or "No such an entry" in error_message:
+                 return f"Error: CLI script path not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error listing CLI scripts in ADOM '{adom}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception listing CLI scripts in ADOM '{adom}': {e}"
+
+# @mcp.tool()
+def get_cli_script_content(script_name: str, adom: str = "root"):
+    """
+    Retrieves the content of a specific CLI script from FortiManager.
+    Requires script_name. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not script_name:
+        return "Error: script_name parameter is required."
+
+    try:
+        # API URL for fetching a specific CLI script's content.
+        # Typically /pm/config/adom/{adom}/script/script/{script_name}
+        api_url = f"/pm/config/adom/{adom}/script/script/{script_name.strip()}"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            script_details = response_data.get("data")
+            if isinstance(script_details, dict):
+                # The script content is often in a field like 'content' or 'script'
+                script_content = script_details.get("content", script_details.get("script"))
+                if script_content is not None:
+                    return {
+                        "message": f"Successfully retrieved content for CLI script '{script_name}' in ADOM '{adom}'.",
+                        "script_name": script_name,
+                        "adom": adom,
+                        "content": script_content,
+                        "details": script_details # Return all details as well
+                    }
+                else:
+                    return f"CLI script '{script_name}' found, but its content field ('content' or 'script') is missing or empty. Details: {script_details}"
+            elif script_details: # If data is not a dict but not empty
+                 return f"Retrieved data for script '{script_name}', but it was not in the expected dictionary format: {script_details}"
+            else: # No data field or empty
+                return f"No data returned for CLI script '{script_name}' in ADOM '{adom}' at '{api_url}'. Script might be empty or not found."
+
+        elif code == 0: # Successful call but empty/unexpected response_data
+             return f"Query for CLI script '{script_name}' in ADOM '{adom}' at '{api_url}' was successful, but no data was returned or format was unexpected: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "not found" in error_message.lower() or "No such an entry" in error_message:
+                 return f"Error: CLI script '{script_name}' not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error retrieving CLI script '{script_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception retrieving CLI script '{script_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -1007,6 +1100,16 @@ if __name__ == '__main__':
         #         print(query_result)
         # else:
         #     print("Skipping query_firewall_policies test as no package_name was available.")
+
+        # Test list_cli_scripts
+        # print("\n--- List CLI Scripts (ADOM: root) ---")
+        # cli_scripts_result = list_cli_scripts(adom="root")
+        # if isinstance(cli_scripts_result, dict) and "scripts" in cli_scripts_result:
+        #     print(f"Found {cli_scripts_result.get('script_count', 0)} CLI scripts.")
+        #     for script in cli_scripts_result["scripts"][:3]: # Print first 3
+        #         print(f"  - Name: {script.get('name')}, Description: {script.get('desc')}")
+        # else:
+        #     print(cli_scripts_result)
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")

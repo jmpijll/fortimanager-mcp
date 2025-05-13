@@ -195,6 +195,16 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `package_name` (string), `adom` (string, optional), `source_address` (string, optional), `destination_address` (string, optional), `service` (string, optional), `action` (string, optional, e.g., 'accept', 'deny'), `status` (string, optional, e.g., 'enable', 'disable'), `policy_name_contains` (string, optional).
     *   **Returns**: A list of firewall policies matching the criteria, or an error message.
 
+15. **`list_fortimanager_cli_scripts`**
+    *   **Description**: Lists available CLI scripts in FortiManager for a specific ADOM. ADOM defaults to 'root'.
+    *   **Parameters**: `adom` (string, optional, default: "root").
+    *   **Returns**: A list of CLI script details (e.g., name, description) or an error message.
+
+16. **`get_fortimanager_cli_script_content`**
+    *   **Description**: Retrieves the content of a specific CLI script from FortiManager. Requires script_name. ADOM defaults to 'root'.
+    *   **Parameters**: `script_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: The content of the CLI script and its details, or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -207,19 +217,25 @@ This project is just getting started! Here are some ideas for future development
     *   **Policy & Objects Management:**
         *(This category is now complete based on the initial list!)*
     *   **Scripts & Templates:**
-        *   `list_cli_scripts`: List available CLI scripts.
-        *   `get_cli_script_content`: View the content of a specific CLI script.
         *   `run_cli_script_on_device`: Execute a pre-defined CLI script on a target device/VDOM.
     *   **ADOM Management:**
         *   `list_adoms`: List all Administrative Domains (ADOMs).
         *   `get_adom_details`: Get specific details for an ADOM.
+    *   **Device & VDOM Insights:** (New Category)
+        *   `list_vdoms_on_device`: List Virtual Domains (VDOMs) for a specified device.
+        *   `get_device_ha_status`: Retrieve the High Availability (HA) status for a specific device.
     *   **FortiGuard & System (FortiManager specific):**
         *   `get_fortimanager_fortiguard_status`: Check FortiGuard service status (AV/IPS DB versions, licenses).
         *   `list_available_firmware_versions`: List firmware available on FortiManager for a device model.
+        *   `get_fortimanager_api_version`: Get the FortiManager API version and build number.
     *   **Installation & Task Management:**
         *   `install_policy_package`: Install a policy package to its targets. (Use with caution!)
         *   `install_device_config`: Install device-level settings to a device. (Use with caution!)
         *   `get_task_status`: Check the status of a background FortiManager task by its ID.
+    *   **Logging & Reporting:** (New Category)
+        *   `get_fortimanager_event_logs`: Retrieve FortiManager event logs with basic filtering options (e.g., severity, time range).
+    *   **Configuration & Backup (Advanced - Use with Caution):** (New Category)
+        *   `get_device_config_backup_text`: Retrieve the configuration of a device as text.
 *   **Advanced Error Handling**: More specific error codes and messages from API interactions.
 *   **Tool Input Validation**: Stricter validation for tool parameters.
 *   **Write Operations**: Carefully implement tools that make changes to FortiManager (e.g., adding objects, modifying policies) with appropriate safeguards and clear warnings in descriptions.

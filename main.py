@@ -112,6 +112,14 @@ def query_firewall_policies_wrapper(
         policy_name_contains=policy_name_contains
     )
 
+@mcp.tool(name="list_fortimanager_cli_scripts", description=fmg_tools.list_cli_scripts.__doc__)
+def list_cli_scripts_wrapper(adom: str = "root"):
+    return fmg_tools.list_cli_scripts(adom=adom)
+
+@mcp.tool(name="get_fortimanager_cli_script_content", description=fmg_tools.get_cli_script_content.__doc__)
+def get_cli_script_content_wrapper(script_name: str, adom: str = "root"):
+    return fmg_tools.get_cli_script_content(script_name=script_name, adom=adom)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.
