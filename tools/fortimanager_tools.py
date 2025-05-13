@@ -554,6 +554,58 @@ def get_policy_package_details(package_name: str, adom: str = "root"):
     except Exception as e:
         return f"Exception retrieving details for policy package '{package_name}': {e}"
 
+# @mcp.tool()
+def list_firewall_policies(package_name: str, adom: str = "root"):
+    """
+    Lists firewall policies within a specific policy package in an ADOM.
+    Requires package_name. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not package_name:
+        return "Error: package_name parameter is required."
+
+    try:
+        # API URL for listing firewall policies within a package.
+        # Example: /pm/config/adom/{adom}/pkg/{package_name}/firewall/policy
+        # Or sometimes /pm/pkg/adom/{adom_name}/{package_name}/firewall/policy
+        # Using the /pm/config path as it's common for configuration objects.
+        api_url = f"/pm/config/adom/{adom}/pkg/{package_name}/firewall/policy"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            # Firewall policies are usually returned as a list in the 'data' field.
+            policies = response_data.get("data")
+            
+            # The 'data' field might be a list directly, or an object containing a list (e.g., under a key like 'policy_list')
+            # For now, assuming 'data' is the list if it exists and is a list.
+            if isinstance(policies, list):
+                if not policies:
+                    return f"No firewall policies found in package '{package_name}' in ADOM '{adom}' at '{api_url}'."
+                return {
+                    "message": f"Successfully retrieved firewall policies for package '{package_name}' in ADOM '{adom}'.",
+                    "package_name": package_name,
+                    "adom": adom,
+                    "policy_count": len(policies),
+                    "policies": policies
+                }
+            else:
+                # If policies is not a list, the response structure might be different or an error/empty case.
+                return f"Firewall policies data for package '{package_name}' at '{api_url}' is not in the expected list format: {policies}"
+        elif code == 0: # Successful call but empty response_data or unexpected format
+             return f"Query for firewall policies in package '{package_name}' (ADOM '{adom}') at '{api_url}' was successful, but no data was returned or data was not in expected format: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such package" in error_message or "not found" in error_message.lower() or "No such an entry" in error_message:
+                 return f"Error: Policy package '{package_name}' or firewall policy path not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error listing firewall policies for package '{package_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception listing firewall policies for package '{package_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:
@@ -645,6 +697,22 @@ if __name__ == '__main__':
         #     print(package_details_result)
         # else:
         #     print("Skipping get_policy_package_details test as no package name could be determined automatically from list_policy_packages.")
+
+        # Test list_firewall_policies
+        # print("\n--- List Firewall Policies ---")
+        # if 'test_package_name' in locals() and test_package_name: # Use package from previous test
+        #     print(f"Listing firewall policies for package: {test_package_name}")
+        #     firewall_policies_result = list_firewall_policies(package_name=test_package_name, adom="root")
+        #     if isinstance(firewall_policies_result, dict) and "policies" in firewall_policies_result:
+        #         print(f"Found {firewall_policies_result.get('policy_count', 0)} firewall policies.")
+        #         for policy in firewall_policies_result["policies"][:3]: # Print first 3 policies
+        #             print(f"  - Policy ID: {policy.get('policyid', 'N/A')}, Name: {policy.get('name', 'N/A')}, Action: {policy.get('action','N/A')}")
+        #         if firewall_policies_result.get('policy_count', 0) > 3:
+        #             print(f"  ... and {firewall_policies_result['policy_count'] - 3} more policies.")
+        #     else:
+        #         print(firewall_policies_result)
+        # else:
+        #     print("Skipping list_firewall_policies test as no package_name was available.")
 
     except ValueError as ve:
         print(f"Configuration Error: {ve}")
