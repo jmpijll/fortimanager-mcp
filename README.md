@@ -175,6 +175,11 @@ Here are the tools currently implemented and ready for use:
     *   **Parameters**: `package_name` (string), `adom` (string, optional, default: "root").
     *   **Returns**: A list of firewall policies or an error message.
 
+11. **`get_fortimanager_firewall_policy_details`**
+    *   **Description**: Retrieves detailed configuration for a specific firewall policy by its ID. Requires policy_id, package_name. ADOM defaults to 'root'. Note: policy_id is usually an integer.
+    *   **Parameters**: `policy_id` (string), `package_name` (string), `adom` (string, optional, default: "root").
+    *   **Returns**: Detailed configuration of the firewall policy or an error message.
+
 *(More tools to come!)*
 
 ## 🔮 Future Enhancements
@@ -185,7 +190,6 @@ This project is just getting started! Here are some ideas for future development
     *   **Device Management:**
         *(This category is now complete based on the initial list!)*
     *   **Policy & Objects Management:**
-        *   `get_firewall_policy_details`: Retrieve full configuration of a specific firewall policy.
         *   `list_firewall_objects`: List firewall objects (addresses, services, etc.) in an ADOM.
         *   `get_firewall_object_details`: Get details for a specific firewall object.
         *   `query_firewall_policy`: Search policies based on source/destination, service, etc.
