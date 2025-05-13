@@ -1006,6 +1006,84 @@ def list_adoms():
     except Exception as e:
         return f"Exception listing ADOMs: {e}"
 
+# @mcp.tool()
+def get_adom_details(adom_name: str):
+    """
+    Retrieves specific details for a given Administrative Domain (ADOM) in FortiManager.
+    Requires adom_name.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not adom_name:
+        return "Error: adom_name parameter is required."
+
+    try:
+        # API URL for fetching details of a specific ADOM.
+        api_url = f"/dvmdb/adom/{adom_name.strip()}"
+        
+        response = client.get(api_url)
+        
+        if response and response.get('status', {}).get('code') == 0:
+            # Successfully retrieved ADOM details.
+            # The 'data' field or the top-level response might contain the ADOM details
+            adom_data = response.get('data', response) 
+            if isinstance(adom_data, list) and len(adom_data) == 1: # Often details are a list with one item
+                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_data[0]}
+            elif isinstance(adom_data, dict): # Or it could be a direct dictionary
+                 return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved.", "data": adom_data}
+            else: # Fallback if structure is unexpected
+                return {"status": "success", "message": f"Details for ADOM '{adom_name}' retrieved, raw data included.", "data": response}
+
+        else:
+            error_msg = response.get('status', {}).get('message', 'Unknown error')
+            return f"Error retrieving details for ADOM '{adom_name}': {error_msg} (Code: {response.get('status', {}).get('code')})"
+            
+    except Exception as e:
+        return f"Exception retrieving details for ADOM '{adom_name}': {e}"
+
+# @mcp.tool()
+def list_vdoms_on_device(device_name: str, adom: str = "root"):
+    """
+    Lists Virtual Domains (VDOMs) on a specific device in FortiManager.
+    Requires device_name and adom. ADOM defaults to 'root'.
+    """
+    client = initialize_fmg_api_client()
+    if not client:
+        return "FortiManager API client not initialized."
+
+    if not device_name:
+        return "Error: device_name parameter is required."
+
+    try:
+        # API URL for listing VDOMs on a device.
+        api_url = f"/dvmdb/adom/{adom}/device/{device_name}/config/system/vdom"
+        
+        code, response_data = client.get(api_url)
+
+        if code == 0 and response_data:
+            vdom_list = response_data.get("data", [])
+            if not vdom_list:
+                return f"No VDOMs found on device '{device_name}' in ADOM '{adom}' at '{api_url}'."
+            return {
+                "message": f"Successfully retrieved VDOMs for device '{device_name}' in ADOM '{adom}'.",
+                "device_name": device_name,
+                "adom": adom,
+                "vdom_count": len(vdom_list),
+                "vdoms": vdom_list
+            }
+        elif code == 0:
+            return f"Query for VDOMs on device '{device_name}' in ADOM '{adom}' at '{api_url}' was successful, but no data was returned or data format was unexpected: {response_data}"
+        else:
+            error_message = response_data.get('status', {}).get('message', 'Unknown error')
+            if code == -3 or "Object not exist" in error_message or "No such device" in error_message or "No such an entry" in error_message:
+                return f"Error: Device '{device_name}' or VDOM path not found in ADOM '{adom}'. (Code: {code}) - {error_message}"
+            return f"Error listing VDOMs on device '{device_name}': {error_message} (Code: {code})"
+
+    except Exception as e:
+        return f"Exception listing VDOMs on device '{device_name}': {e}"
+
 # Example usage (for testing locally, not part of MCP normally)
 if __name__ == '__main__':
     try:

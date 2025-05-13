@@ -128,6 +128,10 @@ def run_cli_script_on_device_wrapper(script_name: str, device_name: str, adom: s
 def list_adoms_wrapper():
     return fmg_tools.list_adoms()
 
+@mcp.tool(name="get_fortimanager_adom_details", description=fmg_tools.get_adom_details.__doc__)
+def get_adom_details_wrapper(adom_name: str):
+    return fmg_tools.get_adom_details(adom_name=adom_name)
+
 if __name__ == "__main__":
     # You can configure host, port, and transport as needed.
     # Default is stdio transport.
