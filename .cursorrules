@@ -1,0 +1,55 @@
+# FortiManager MCP Server Project Rules
+
+## Project Context
+This is a Model Context Protocol (MCP) server that provides FortiManager JSON RPC API operations as standardized MCP tools. The server is built with Python, FastMCP framework, and deployed via Docker.
+
+## Code Style & Standards
+- Use Python 3.12+ features
+- Follow PEP 8 style guidelines
+- Use type hints for all function signatures
+- Prefer async/await for I/O operations
+- Use Pydantic for data validation and models
+
+## Architecture Principles
+- Keep MCP tools single-purpose and granular
+- Separate concerns: API client, tools, server
+- Use domain-specific modules for FortiManager API operations
+- Handle errors gracefully with meaningful messages
+- Log all API interactions for debugging
+
+## FortiManager API Guidelines
+- Base URL format: `https://{host}/jsonrpc`
+- Use JSON-RPC 2.0 format for all requests
+- Support both token-based and session-based authentication
+- Always use verbose=1 for symbolic responses
+- Handle multiplexed requests when appropriate
+- Monitor long-running tasks with task IDs
+
+## Testing Guidelines
+- Integration tests only (no unit tests with mocks)
+- All tests must be non-intrusive (read-only when possible)
+- Use "MCP_TEST_" prefix for test objects
+- Clean up test objects after test runs
+- Load credentials from environment variables
+- Never commit credentials to the repository
+
+## Documentation Requirements
+- Include comprehensive docstrings for all MCP tools (LLMs read these)
+- Document all function parameters and return types
+- Explain FortiManager API endpoints in comments
+- Keep README updated with new features
+- Document all ADRs in .notes/decisions/
+
+## Dependencies
+- Use uv for dependency management
+- Pin major versions in pyproject.toml
+- Keep dependencies minimal and security-focused
+- Prefer standard library when possible
+
+## Docker Best Practices
+- Use multi-stage builds for optimization
+- Run as non-root user in production
+- Expose only necessary ports
+- Use environment variables for configuration
+- Include health checks
+
