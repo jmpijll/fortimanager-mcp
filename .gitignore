@@ -164,6 +164,17 @@ htmlcov/
 .coverage
 .pytest_cache/
 
+# Cursor IDE (keep local only)
+.cursorrules
+.cursorignore
+
+# Local helper scripts
+verify_files.sh
+GITHUB_SETUP_GUIDE.md
+QUICK_PUSH_COMMANDS.md
+PUSH_SUMMARY.md
+DEPLOYMENT_COMPLETE.md
+
 # Docker
 .dockerignore
 
