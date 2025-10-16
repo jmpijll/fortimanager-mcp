@@ -36,3 +36,4 @@ class OptionAttributeAPI:
         url = f"/pm/config/adom/{adom}/_data/option/{object_type}"
         return await self.client.get(url)
 
+

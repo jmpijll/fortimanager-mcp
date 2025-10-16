@@ -83,3 +83,4 @@ The project roadmap includes:
 
 - **0.1.0-beta** (2025-10-16): Initial beta release with complete API coverage
 
+

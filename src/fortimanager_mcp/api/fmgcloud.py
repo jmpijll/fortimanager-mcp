@@ -63,3 +63,4 @@ class FMGCloudAPI:
         url = "/sys/cloud/sync"
         return await self.client.exec(url, data={})
 
+

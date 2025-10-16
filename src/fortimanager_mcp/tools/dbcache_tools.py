@@ -60,3 +60,4 @@ async def get_database_cache_statistics(adom: str = "root") -> dict[str, Any]:
         logger.error(f"Error getting cache statistics: {e}")
         return {"status": "error", "message": str(e)}
 
+

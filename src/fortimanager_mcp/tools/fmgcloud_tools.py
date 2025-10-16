@@ -129,3 +129,4 @@ async def sync_with_forticloud() -> dict[str, Any]:
         logger.error(f"Error syncing with FortiCloud: {e}")
         return {"status": "error", "message": str(e)}
 
+

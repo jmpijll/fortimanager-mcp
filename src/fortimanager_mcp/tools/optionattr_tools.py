@@ -54,3 +54,4 @@ async def get_object_type_option_attributes(
         logger.error(f"Error getting option attributes: {e}")
         return {"status": "error", "message": str(e)}
 
+

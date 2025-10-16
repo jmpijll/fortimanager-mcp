@@ -82,3 +82,4 @@ class CSFAPI:
         data = await self.client.get(url)
         return data if isinstance(data, dict) else {}
 
+

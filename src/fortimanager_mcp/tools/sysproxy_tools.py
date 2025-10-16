@@ -71,3 +71,4 @@ async def get_device_proxy_capabilities(device_name: str, adom: str = "root") ->
         logger.error(f"Error getting proxy capabilities: {e}")
         return {"status": "error", "message": str(e)}
 
+

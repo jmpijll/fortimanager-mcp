@@ -49,3 +49,4 @@ class QoSAPI:
         url = f"/monitor/adom/{adom}/device/{device_name}/qos/stats"
         return await self.client.get(url)
 
+

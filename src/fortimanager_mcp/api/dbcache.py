@@ -51,3 +51,4 @@ class DBCacheAPI:
         url = f"/cache/adom/{adom}/status"
         return await self.client.get(url)
 
+

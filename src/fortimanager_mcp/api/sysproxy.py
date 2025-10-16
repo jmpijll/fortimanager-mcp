@@ -58,3 +58,4 @@ class SysProxyAPI:
         url = f"/dvmdb/adom/{adom}/device/{device_name}/proxy/capabilities"
         return await self.client.get(url)
 
+

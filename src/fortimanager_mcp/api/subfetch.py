@@ -96,3 +96,4 @@ class SubFetchAPI:
         data = await self.client.get(url)
         return data if isinstance(data, list) else [data] if data else []
 
+
