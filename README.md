@@ -90,6 +90,8 @@ curl http://localhost:8000/health
 
 The MCP server will be available at: `http://localhost:8000/mcp`
 
+> **For detailed Docker deployment, troubleshooting, and health monitoring**, see [DOCKER_GUIDE.md](DOCKER_GUIDE.md)
+
 ## Configuration
 
 ### Environment Variables

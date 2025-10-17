@@ -83,12 +83,78 @@ from fortimanager_mcp.tools import additional_object_tools, advanced_object_tool
 
 def main() -> None:
     """Entry point for the MCP server."""
+    import sys
+    import os
+    
+    # Detect if running in stdio mode (for LM Studio, Claude Desktop, etc.)
+    # Check if stdin is a TTY (terminal) or a pipe
+    is_stdio_mode = not sys.stdin.isatty() or os.getenv("MCP_STDIO_MODE") == "1"
+    
+    if is_stdio_mode:
+        # Run in stdio mode for MCP clients
+        logger.info("Starting MCP server in stdio mode")
+        run_stdio()
+    else:
+        # Run in HTTP mode for Docker deployment
+        logger.info(f"Starting MCP server in HTTP mode on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}")
+        run_http()
+
+
+def run_stdio() -> None:
+    """Run MCP server in stdio mode for LM Studio and similar clients."""
+    import asyncio
+    
+    async def stdio_main():
+        """Main coroutine for stdio mode."""
+        global fmg_client
+        
+        # Initialize FortiManager connection
+        logger.info("Initializing FortiManager connection")
+        fmg_client = FortiManagerClient.from_settings(settings)
+        
+        try:
+            await fmg_client.connect()
+            logger.info("FortiManager connection established")
+        except Exception as e:
+            logger.warning(f"FortiManager connection failed: {e}. Server will still start.")
+        
+        try:
+            # Run FastMCP in stdio mode (use the async version directly)
+            await mcp.run_stdio_async()
+        finally:
+            # Cleanup
+            logger.info("Closing FortiManager connection")
+            if fmg_client:
+                await fmg_client.disconnect()
+    
+    # Run the async main
+    asyncio.run(stdio_main())
+
+
+def run_http() -> None:
+    """Run MCP server in HTTP mode for Docker deployment."""
     import uvicorn
     from contextlib import asynccontextmanager
     from starlette.applications import Starlette
-    from starlette.routing import Mount
-    
-    logger.info(f"Starting MCP server on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}")
+    from starlette.routing import Mount, Route
+    from starlette.responses import JSONResponse
+    from starlette.requests import Request
+
+    # Health check endpoint
+    async def health_endpoint(request: Request) -> JSONResponse:
+        """HTTP health check endpoint for Docker health checks."""
+        global fmg_client
+        
+        # Check if client is connected by verifying _client attribute exists
+        is_connected = fmg_client is not None and fmg_client._client is not None
+        
+        health_status = {
+            "status": "healthy",
+            "service": "fortimanager-mcp",
+            "fortimanager_connected": is_connected
+        }
+        
+        return JSONResponse(health_status, status_code=200)
 
     # Create Starlette app with lifespan
     @asynccontextmanager
@@ -104,13 +170,19 @@ def main() -> None:
                 await fmg_client.connect()
                 logger.info("FortiManager connection established")
                 yield
+            except Exception as e:
+                logger.warning(f"FortiManager connection failed: {e}. Server will still start.")
+                # Server can still start even if FortiManager is not available
+                yield
             finally:
                 logger.info("Closing FortiManager connection")
-                await fmg_client.disconnect()
+                if fmg_client:
+                    await fmg_client.disconnect()
     
     # Create app with MCP mounted and proper lifespan
     app = Starlette(
         routes=[
+            Route("/health", health_endpoint, methods=["GET"]),
             Mount("/", app=mcp.streamable_http_app()),
         ],
         lifespan=app_lifespan,
