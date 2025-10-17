@@ -225,6 +225,14 @@ src/fortimanager_mcp/
 - [Implementation Summary](.notes/IMPLEMENTATION_SUMMARY.md) - Development overview
 - [Quick Reference](.notes/QUICK_REFERENCE.md) - Common operations
 
+### Wiki
+- [Home](https://github.com/jmpijll/fortimanager-mcp/wiki)
+- [Installation](https://github.com/jmpijll/fortimanager-mcp/wiki/Installation)
+- [User Guide](https://github.com/jmpijll/fortimanager-mcp/wiki/User-Guide)
+- [API Documentation](https://github.com/jmpijll/fortimanager-mcp/wiki/API-Documentation)
+- [Development](https://github.com/jmpijll/fortimanager-mcp/wiki/Development)
+- [FAQ](https://github.com/jmpijll/fortimanager-mcp/wiki/FAQ)
+
 ### Architecture Decision Records
 - [ADR-001: Python with FastMCP](.notes/decisions/ADR-001-python-fastmcp.md)
 - [ADR-002: Token Authentication](.notes/decisions/ADR-002-token-auth.md)
@@ -314,13 +322,13 @@ See [Troubleshooting Guide](.notes/QUICK_REFERENCE.md#troubleshooting) for more 
 
 ## License
 
-[Specify License]
+MIT License — see [LICENSE](LICENSE)
 
 ## Support
 
-- **Issues:** [GitHub Issues](link-to-issues)
+- **Issues:** [GitHub Issues](https://github.com/jmpijll/fortimanager-mcp/issues)
 - **Documentation:** [.notes Directory](.notes/)
-- **Discussions:** [GitHub Discussions](link-to-discussions)
+- **Wiki:** [Project Wiki](https://github.com/jmpijll/fortimanager-mcp/wiki)
 
 ## Acknowledgments
 
