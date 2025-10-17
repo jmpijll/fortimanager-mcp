@@ -1,15 +1,19 @@
-# Dynamic Tool Loading Mode Guide
+# Dynamic Tool Loading Mode Guide (v2)
 
 ## Overview
 
-FortiManager MCP Server now supports **two operational modes** to optimize for different context window sizes:
+FortiManager MCP Server supports **two operational modes** optimized for different context window sizes:
 
 | Mode | Tools Loaded | Context Usage | Best For |
 |------|-------------|---------------|----------|
-| **Full** (default) | All 590 tools | ~118K tokens | Large context windows (200K+) |
-| **Dynamic** | 5 meta-tools | ~2K tokens | Small context windows (<200K) |
+| **Full** (default) | All 590 tools | ~118K tokens | Large contexts (200K+) |
+| **Dynamic** | ~15 direct tools | ~3-4K tokens | Small contexts (<200K) |
 
-**Key Benefit:** Dynamic mode reduces context consumption by **98%** while maintaining full functionality.
+**Key Benefits:**
+- ✅ **96-97% context reduction** (118K → 3-4K tokens)
+- ✅ **Natural LLM interface** - Direct tool calls like `list_adoms()`
+- ✅ **Full functionality** - All 590 operations accessible
+- ✅ **Better usability** - No confusing 2-step workflows
 
 ---
 
@@ -17,407 +21,410 @@ FortiManager MCP Server now supports **two operational modes** to optimize for d
 
 ### Enable Dynamic Mode
 
-#### Option 1: Environment Variable
 ```bash
+# Option 1: Environment variable
 export FMG_TOOL_MODE=dynamic
-python -m fortimanager_mcp
-```
 
-#### Option 2: .env File
-```bash
-# Add to .env
-FMG_TOOL_MODE=dynamic
-```
+# Option 2: .env file
+echo "FMG_TOOL_MODE=dynamic" >> .env
 
-#### Option 3: Docker Compose
-```yaml
-# docker-compose.yml
-services:
-  fortimanager-mcp:
-    environment:
-      - FMG_TOOL_MODE=dynamic
-      - FORTIMANAGER_HOST=your-host
-      - FORTIMANAGER_API_TOKEN=your-token
-```
-
-#### Option 4: Claude Desktop
-```json
-{
-  "mcpServers": {
-    "fortimanager": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "-e", "FMG_TOOL_MODE=dynamic",
-        "-e", "FORTIMANAGER_HOST=192.168.1.99",
-        "-e", "FORTIMANAGER_API_TOKEN=your-token",
-        "fortimanager-mcp"
-      ]
-    }
-  }
-}
+# Option 3: Docker Compose
+docker-compose up  # Uses FMG_TOOL_MODE from environment
 ```
 
 ---
 
-## How Dynamic Mode Works
+## How It Works
 
-### Full Mode (Default Behavior)
+### The Problem with Meta-Tools
+
+**Initial Approach (v1) - ❌ Didn't Work:**
 ```
-┌─────────────────┐
-│  MCP Server     │
-│  590 tools      │  ← All tools loaded at startup
-│  ~118K tokens   │
-└─────────────────┘
-         │
-         ▼
-   Direct tool call
+LLM sees: search_fortimanager_tools(), execute_fortimanager_tool()
+User asks: "List all ADOMs"
+LLM tries: search... then execute... (FAILS - too indirect)
 ```
 
-### Dynamic Mode (New)
+**Why it failed:**
+- LLMs struggled with 2-step workflows
+- `execute_fortimanager_tool(tool_name="...")` was too generic
+- Indirect pattern was unintuitive
+
+### The Solution: Direct Proxy Tools
+
+**Current Approach (v2) - ✅ Works Great:**
 ```
-┌─────────────────┐
-│  MCP Server     │
-│  5 meta-tools   │  ← Only discovery tools loaded
-│  ~2K tokens     │
-└─────────────────┘
-         │
-         ▼
-  1. Search for tools
-  2. Execute by name
-  3. Dynamic import & run
+LLM sees: list_adoms(), list_devices(), create_firewall_address()
+User asks: "List all ADOMs"
+LLM calls: list_adoms() → SUCCESS!
 ```
+
+**Why it works:**
+- Direct, action-oriented tool names
+- Natural interface matching user intent
+- LLMs understand "list_adoms" immediately
+- No meta-cognition required
 
 ---
 
-## Meta-Tools Available in Dynamic Mode
+## Available Tools in Dynamic Mode
 
-### 1. `search_fortimanager_tools`
-Find tools by query or category.
+### Core Direct Tools (~15 tools)
 
-**Example:**
+#### ADOM Management
 ```python
-search_fortimanager_tools(query="firewall address")
-# Returns: List of matching tools with descriptions
+list_adoms()
+# Lists all Administrative Domains
+
+get_adom_details(adom="root")
+# Gets detailed ADOM information
 ```
 
-### 2. `list_fortimanager_categories`
-View all tool categories with counts.
-
-**Example:**
+#### Device Management
 ```python
+list_devices(adom=None)
+# Lists all managed FortiGate devices
+
+get_device_details(name="FGT-001", adom=None)
+# Gets detailed device information
+```
+
+#### Firewall Objects
+```python
+list_firewall_addresses(adom="root", filter_name=None)
+# Lists firewall address objects
+
+create_firewall_address(name="internal", subnet="10.0.0.0/8", adom="root", comment=None)
+# Creates a new firewall address
+```
+
+#### Policy Management
+```python
+list_policy_packages(adom="root")
+# Lists all policy packages
+
+list_firewall_policies(adom="root", package="default")
+# Lists firewall policies in a package
+```
+
+#### System Monitoring
+```python
+get_system_status()
+# Gets FortiManager system status
+
+list_tasks(limit=None)
+# Lists recent system tasks
+```
+
+### Discovery Tools (for advanced operations)
+
+For less common operations (VPN, SD-WAN, advanced configs):
+
+```python
+find_fortimanager_tool(operation="create VPN tunnel")
+# Searches all 590 operations, returns matches with usage instructions
+
+execute_advanced_tool(tool_name="create_vpn_ipsec_phase1", name="my_vpn", ...)
+# Executes any of the 590 operations
+
 list_fortimanager_categories()
-# Returns: devices (69), policies (64), objects (47), etc.
-```
-
-### 3. `execute_fortimanager_tool`
-Run any FortiManager tool by name.
-
-**Example:**
-```python
-execute_fortimanager_tool(
-    tool_name="list_devices",
-    adom="root"
-)
-# Returns: Device list
-```
-
-### 4. `get_fortimanager_tool_info`
-Get detailed tool documentation.
-
-**Example:**
-```python
-get_fortimanager_tool_info("create_firewall_address")
-# Returns: Parameters, description, usage
-```
-
-### 5. `fortimanager_help`
-Get help on using dynamic mode.
-
-**Example:**
-```python
-fortimanager_help()
-# Returns: Workflow guide and examples
+# Shows all 15 categories with tool counts
 ```
 
 ---
 
-## Usage Workflow
+## Usage Examples
 
-### Example 1: List Devices
+### Example 1: Common Operation (Direct Call)
 
-**In Full Mode:**
-```
-User: "List all FortiGate devices"
-AI:   list_devices(adom="root")
-```
+**User Request:** "Show me all ADOMs"
 
-**In Dynamic Mode:**
-```
-User: "List all FortiGate devices"
-AI:   Step 1: search_fortimanager_tools(query="list devices")
-      → Found: list_devices
-      
-      Step 2: execute_fortimanager_tool(
-          tool_name="list_devices",
-          adom="root"
-      )
-      → Returns device list
+**LLM Response:**
+```python
+list_adoms()
 ```
 
-### Example 2: Create Firewall Address
+**Result:** ✅ Works immediately - natural, direct call
 
-**In Full Mode:**
+---
+
+### Example 2: Device Listing (With Filter)
+
+**User Request:** "List devices in the production ADOM"
+
+**LLM Response:**
+```python
+list_devices(adom="production")
 ```
-AI: create_firewall_address(
-    name="internal_network",
-    subnet="10.0.0.0/8",
-    adom="root"
+
+**Result:** ✅ Simple parameter, clear intent
+
+---
+
+### Example 3: Create Firewall Object
+
+**User Request:** "Create a firewall address for the DMZ network 172.16.0.0/24"
+
+**LLM Response:**
+```python
+create_firewall_address(
+    name="dmz_network",
+    subnet="172.16.0.0/24",
+    adom="root",
+    comment="DMZ network range"
 )
 ```
 
-**In Dynamic Mode:**
-```
-AI: Step 1: search_fortimanager_tools(
-        query="create firewall address",
-        category="objects"
-    )
-    → Found: create_firewall_address
-    
-    Step 2: get_fortimanager_tool_info("create_firewall_address")
-    → Parameters: name, subnet, adom, comment
-    
-    Step 3: execute_fortimanager_tool(
-        tool_name="create_firewall_address",
-        name="internal_network",
-        subnet="10.0.0.0/8",
-        adom="root"
-    )
-    → Returns success
-```
+**Result:** ✅ Natural, matches user's intent
 
 ---
 
-## Tool Categories
+### Example 4: Advanced Operation (VPN Tunnel)
 
-Dynamic mode organizes 590 tools into 15 categories:
+**User Request:** "Set up an IPsec VPN tunnel to 1.2.3.4"
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| **provisioning** | 98 | CLI templates, system templates, device profiles |
-| **devices** | 69 | Device lifecycle, firmware, HA, VDOMs |
-| **policies** | 64 | Policy packages, firewall rules, NAT, installation |
-| **system** | 47 | Administration, backup, restore, certificates |
-| **objects** | 47 | Addresses, services, zones, VIPs, schedules |
-| **monitoring** | 43 | System status, device connectivity, tasks |
-| **security** | 33 | Web filter, IPS, antivirus, app control, DLP |
-| **adom** | 28 | ADOM management, workspace, revisions |
-| **vpn** | 24 | IPsec tunnels, SSL-VPN, certificates |
-| **fortiguard** | 23 | Updates, contracts, threat feeds |
-| **sdwan** | 19 | SD-WAN zones, health checks, services |
-| **advanced_objects** | 18 | Dynamic objects, threat feeds, SDN |
-| **additional_objects** | 16 | Schedules, internet services, geography |
-| **workspace** | 12 | ADOM locking, commits, lock status |
-| **scripts** | 12 | CLI script management, execution |
+**LLM Response:**
+```python
+# Step 1: Find the right tool
+find_fortimanager_tool(operation="create VPN tunnel")
+
+# Step 2: Use the found tool
+execute_advanced_tool(
+    tool_name="create_vpn_ipsec_phase1",
+    name="branch_vpn",
+    remote_gw="1.2.3.4",
+    adom="root",
+    ...
+)
+```
+
+**Result:** ✅ Discovery pattern works for complex operations
 
 ---
 
-## Performance Comparison
+## Comparison: Full vs Dynamic Mode
 
-### Context Window Usage
+### Tool Availability
 
-| Mode | Tool Definitions | Available for Work | Efficiency |
-|------|-----------------|-------------------|------------|
-| Full | 118,000 tokens | Context - 118K | Baseline |
-| Dynamic | 2,000 tokens | Context - 2K | **98% savings** |
+| Aspect | Full Mode | Dynamic Mode |
+|--------|-----------|--------------|
+| **Common operations** | Direct tools | Direct tools (same!) |
+| **Advanced operations** | Direct tools | Via find + execute |
+| **Context usage** | ~118K tokens | ~3-4K tokens |
+| **LLM experience** | Natural | Natural for common, 2-step for advanced |
 
-**Example: Claude Sonnet 3.5 (200K context)**
-- Full mode: 82K tokens available for work
-- Dynamic mode: 198K tokens available for work
-- **Gain: 116K tokens (2.4x more working space)**
+### Example Workflows
 
-### Execution Latency
+**Listing ADOMs:**
+- **Full mode:** `list_adoms()` 
+- **Dynamic mode:** `list_adoms()` ← **Same experience!**
 
-| Mode | First Call | Subsequent Calls |
-|------|-----------|------------------|
-| Full | <100ms | <100ms |
-| Dynamic | <500ms (import) | <100ms (cached) |
+**Creating VPN:**
+- **Full mode:** `create_vpn_ipsec_phase1(...)`
+- **Dynamic mode:** `find_fortimanager_tool()` → `execute_advanced_tool()`
 
-**Note:** Python caches imported modules, so dynamic mode overhead is only on first use.
+---
+
+## Performance
+
+### Context Window Impact
+
+**Claude Sonnet 3.5 (200K context):**
+- **Full mode:** 82K tokens available for work
+- **Dynamic mode:** 196K tokens available for work
+- **Gain:** +114K tokens (2.4x more space)
+
+### Execution Speed
+
+| Operation Type | Full Mode | Dynamic Mode |
+|---------------|-----------|--------------|
+| Common (direct tools) | <100ms | <100ms |
+| Advanced (first call) | <100ms | <500ms (import) |
+| Advanced (cached) | <100ms | <100ms |
+
+---
+
+## Architecture
+
+### How Proxy Tools Work
+
+```python
+# What the LLM sees and calls:
+list_adoms()
+
+# What happens internally:
+@mcp.tool()
+async def list_adoms() -> dict:
+    """List all Administrative Domains."""
+    return await execute_tool_dynamic("list_adoms")
+
+# execute_tool_dynamic():
+# 1. Gets tool metadata from registry
+# 2. Dynamically imports the module
+# 3. Calls the actual implementation
+# 4. Returns result
+```
+
+**Benefits:**
+- LLM sees natural tool names
+- Internal implementation stays clean
+- Dynamic loading saves context
+- Full functionality preserved
+
+---
+
+## Tool Selection Strategy
+
+### Which Operations Get Direct Tools?
+
+**Criteria for direct tools:**
+1. ✅ Used frequently (ADOMs, devices, policies)
+2. ✅ Simple, clear action (list, get, create)
+3. ✅ Match common user requests
+4. ✅ <20% of operations (to stay under ~4K tokens)
+
+**Current direct tools (~15):**
+- ADOM: list, get details
+- Devices: list, get details
+- Addresses: list, create
+- Policies: list packages, list policies
+- System: status, tasks
+
+**All other operations (575):**
+- Available via `find_fortimanager_tool()` + `execute_advanced_tool()`
+- Full documentation, parameters, examples provided
+- Same functionality, just 2-step access
 
 ---
 
 ## When to Use Each Mode
 
 ### Use Full Mode When:
-- ✅ You have large context windows (200K+ tokens)
-- ✅ You want immediate tool access
-- ✅ You're using tools frequently
-- ✅ You prefer direct tool calling
+- ✅ Large context windows (200K+ tokens)
+- ✅ Need ALL tools immediately visible
+- ✅ Building automation/scripts
+- ✅ Working with many advanced operations
 
 ### Use Dynamic Mode When:
-- ✅ You have limited context windows (<200K tokens)
-- ✅ You need more space for complex tasks
-- ✅ You're using Claude Desktop or similar
-- ✅ You don't mind a discovery step
+- ✅ Limited context (<200K tokens)
+- ✅ Primarily using common operations
+- ✅ Using Claude Desktop or similar
+- ✅ Need context space for complex tasks
 
 ---
 
 ## Troubleshooting
 
-### "Tool not found" Error
+### Issue: "Tool not found"
 
-**Problem:** Tool name incorrect in `execute_fortimanager_tool()`
+**Problem:** LLM tries to call a tool that doesn't have a direct proxy
 
-**Solution:**
+**Solution:** Use discovery pattern:
 ```python
-# Use search first to get exact name
-search_fortimanager_tools(query="your operation")
-# Then use exact name from results
+find_fortimanager_tool(operation="what you want to do")
+execute_advanced_tool(tool_name="...", ...)
 ```
 
-### Slow First Execution
+### Issue: LLM not using tools
 
-**Behavior:** First call to a tool takes ~500ms
+**Problem:** Tool descriptions unclear
 
-**Explanation:** This is normal - Python imports the module on first use. Subsequent calls are fast (~100ms).
-
-### Wrong Mode Active
-
-**Check current mode:**
-```bash
-# Check health endpoint
-curl http://localhost:8000/health
-
-# Or check logs
-docker-compose logs fortimanager-mcp | grep "Loading in"
+**Solution:** Each direct tool has clear examples:
+```python
+list_adoms()
+# Example: "Show me all ADOMs" → list_adoms()
 ```
 
-**Expected output:**
-```
-INFO - Loading in DYNAMIC mode - meta-tools only (5 tools)
-```
+### Issue: Slow first advanced call
+
+**Behavior:** First call to advanced operation takes ~500ms
+
+**Explanation:** Dynamic import overhead. Subsequent calls are fast (<100ms).
 
 ---
 
-## Advanced Usage
+## Migration Guide
 
-### Search Tips
+### From Full Mode
 
-**Broad Search:**
+**No changes needed!** Just set `FMG_TOOL_MODE=dynamic` and restart.
+
+Common operations work identically:
 ```python
-search_fortimanager_tools(query="policy")
-# Returns all tools related to policies
+# Works in both modes:
+list_adoms()
+list_devices()
+create_firewall_address(...)
 ```
 
-**Category Filter:**
+### From Dynamic Mode v1 (Meta-Tools)
+
+**Old approach (meta-tools):**
 ```python
-search_fortimanager_tools(category="devices", limit=50)
-# Returns all 69 device tools
+search_fortimanager_tools(query="list adoms")
+execute_fortimanager_tool(tool_name="list_adoms")
 ```
 
-**Specific Search:**
+**New approach (direct tools):**
 ```python
-search_fortimanager_tools(
-    query="install",
-    category="policies"
-)
-# Returns policy installation tools only
+list_adoms()  # Just call it directly!
 ```
-
-### Chaining Operations
-
-```python
-# Step 1: Search
-results = search_fortimanager_tools(query="address")
-
-# Step 2: Create address
-execute_fortimanager_tool(
-    tool_name="create_firewall_address",
-    name="dmz_network",
-    subnet="172.16.0.0/24",
-    adom="root"
-)
-
-# Step 3: Verify
-execute_fortimanager_tool(
-    tool_name="list_firewall_addresses",
-    adom="root",
-    filter_name="dmz"
-)
-```
-
----
-
-## Migration from Full Mode
-
-### No Changes Needed!
-
-Dynamic mode is opt-in. Existing deployments continue working in full mode.
-
-### Gradual Adoption
-
-1. **Test in development:**
-   ```bash
-   FMG_TOOL_MODE=dynamic docker-compose up
-   ```
-
-2. **Monitor performance:**
-   - Check logs for mode confirmation
-   - Verify tool execution times
-   - Test your common workflows
-
-3. **Deploy to production:**
-   ```bash
-   # Update .env
-   FMG_TOOL_MODE=dynamic
-   
-   # Restart service
-   docker-compose restart
-   ```
-
----
-
-## FAQ
-
-### Q: Does dynamic mode have all 590 tools?
-**A:** Yes! All tools are available, just loaded on-demand instead of at startup.
-
-### Q: Is dynamic mode slower?
-**A:** Slightly (~500ms first call, then cached). The context savings usually outweigh this.
-
-### Q: Can I switch modes without redeploying?
-**A:** Yes, just restart the container with different `FMG_TOOL_MODE` value.
-
-### Q: Which mode should I use?
-**A:** 
-- Large context (200K+): Full mode
-- Small context (<200K): Dynamic mode
-- Not sure: Try dynamic mode first
-
-### Q: Are there any missing features in dynamic mode?
-**A:** No! All features work identically. Only the loading mechanism differs.
 
 ---
 
 ## Technical Details
 
-See [ADR-006: Dynamic Tool Loading](.notes/decisions/ADR-006-dynamic-tool-loading.md) for:
-- Architecture decisions
-- Implementation details
-- Performance implications
-- Testing strategy
-- Future enhancements
+### Files Changed
+- `src/fortimanager_mcp/tools/proxy_tools.py` - Direct proxy tool implementations
+- `src/fortimanager_mcp/server.py` - Loads proxy_tools in dynamic mode
+- `src/fortimanager_mcp/utils/tool_registry.py` - Tool metadata and execution
+
+### Tool Count
+- **Full mode:** 590 tools loaded
+- **Dynamic mode:** ~15 direct + 2 discovery tools loaded
+- **Accessible:** All 590 operations in both modes
+
+### Context Calculation
+```
+Full mode:
+  590 tools × ~200 tokens each = ~118,000 tokens
+
+Dynamic mode:
+  15 direct tools × ~200 tokens = ~3,000 tokens
+  2 discovery tools × ~300 tokens = ~600 tokens
+  Total: ~3,600 tokens
+  
+Savings: 97% reduction
+```
+
+---
+
+## FAQ
+
+**Q: Do I lose functionality in dynamic mode?**
+A: No! All 590 operations accessible. Common ones are direct, advanced use find+execute.
+
+**Q: Why not just load all 590 tools?**
+A: Context window space. Dynamic mode gives you 114K more tokens for your actual task.
+
+**Q: Is dynamic mode slower?**
+A: Common operations: same speed. Advanced operations: ~500ms first call, then cached.
+
+**Q: Can I add more direct tools?**
+A: Yes! Edit `proxy_tools.py` to add tools you use frequently.
+
+**Q: How does LLM know which tool to use?**
+A: Direct tools have clear names and examples. LLMs understand `list_adoms()` naturally.
 
 ---
 
 ## Support
 
 **Issues:** [GitHub Issues](https://github.com/jmpijll/fortimanager-mcp/issues)
-**Documentation:** [.notes Directory](.notes/)
-**ADR:** [ADR-006](.notes/decisions/ADR-006-dynamic-tool-loading.md)
+**Branch:** `feature/dynamic-tool-loading`
+**Documentation:** [ADR-006](.notes/decisions/ADR-006-dynamic-tool-loading.md)
 
 ---
 
-*FortiManager MCP Server - Optimized for any context window size*
+*FortiManager MCP Server - Optimized for any context window, natural for any LLM*
 
