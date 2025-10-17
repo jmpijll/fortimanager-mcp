@@ -75,22 +75,27 @@ def health_check() -> str:
         Health status message
     """
     mode = settings.FMG_TOOL_MODE
-    tool_count = "590 tools" if mode == "full" else "5 meta-tools + 590 on-demand"
-    return f"FortiManager MCP Server is healthy (mode: {mode}, {tool_count})"
+    if mode == "full":
+        tool_info = "590 tools loaded"
+    else:
+        tool_info = "~15 direct tools + 590 operations via proxy"
+    return f"FortiManager MCP Server is healthy (mode: {mode}, {tool_info})"
 
 
 # Conditional tool loading based on FMG_TOOL_MODE
 if settings.FMG_TOOL_MODE == "dynamic":
-    # Dynamic mode: Load only meta-tools for discovery and on-demand execution
-    logger.info("Loading in DYNAMIC mode - meta-tools only (5 tools)")
-    logger.info("All 590 FortiManager tools available on-demand via execute_fortimanager_tool()")
+    # Dynamic mode: Load proxy tools that provide direct, natural interfaces
+    logger.info("Loading in DYNAMIC mode - proxy tools for common operations")
+    logger.info("Direct tools: list_adoms, list_devices, list_firewall_addresses, etc.")
+    logger.info("Discovery tools: find_fortimanager_tool, execute_advanced_tool")
+    logger.info("All 590 FortiManager operations accessible")
     
     # Populate the tool registry for dynamic execution
     from fortimanager_mcp.utils.tool_registry import populate_registry
     populate_registry()
     
-    # Import only meta-tools
-    from fortimanager_mcp.tools import meta_tools  # noqa: E402, F401
+    # Import proxy tools with direct, LLM-friendly interfaces
+    from fortimanager_mcp.tools import proxy_tools  # noqa: E402, F401
     
 else:
     # Full mode: Load all tools (default behavior)
@@ -132,16 +137,20 @@ def main() -> None:
     import sys
     import os
     
-    # Detect if running in stdio mode (for LM Studio, Claude Desktop, etc.)
-    # Check if stdin is a TTY (terminal) or a pipe
-    is_stdio_mode = not sys.stdin.isatty() or os.getenv("MCP_STDIO_MODE") == "1"
+    # Detect server mode
+    # 1. Explicit env var takes precedence
+    # 2. Docker environment → HTTP mode
+    # 3. TTY stdin → HTTP mode
+    # 4. Otherwise → stdio mode
+    explicit_mode = os.getenv("MCP_SERVER_MODE")  # "http" or "stdio"
+    is_docker = os.path.exists("/.dockerenv") or os.getenv("DOCKER_CONTAINER") == "1"
     
-    if is_stdio_mode:
-        # Run in stdio mode for MCP clients
+    if explicit_mode == "stdio" or (explicit_mode is None and not is_docker and not sys.stdin.isatty()):
+        # Run in stdio mode for MCP clients (Claude Desktop, LM Studio, etc.)
         logger.info("Starting MCP server in stdio mode")
         run_stdio()
     else:
-        # Run in HTTP mode for Docker deployment
+        # Run in HTTP mode for Docker deployment or when stdin is TTY
         logger.info(f"Starting MCP server in HTTP mode on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}")
         run_http()
 
