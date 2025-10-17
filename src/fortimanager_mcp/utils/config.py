@@ -72,6 +72,12 @@ class Settings(BaseSettings):
         description="MCP server port",
     )
 
+    # MCP Server Mode
+    MCP_SERVER_MODE: Literal["http", "stdio", "auto"] = Field(
+        default="auto",
+        description="Server mode: 'http' for Docker/web, 'stdio' for Claude Desktop, 'auto' to detect",
+    )
+
     # Tool Loading Mode
     FMG_TOOL_MODE: Literal["full", "dynamic"] = Field(
         default="full",

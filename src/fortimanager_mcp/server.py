@@ -137,20 +137,26 @@ def main() -> None:
     import sys
     import os
     
-    # Detect server mode
-    # 1. Explicit env var takes precedence
-    # 2. Docker environment → HTTP mode
-    # 3. TTY stdin → HTTP mode
-    # 4. Otherwise → stdio mode
-    explicit_mode = os.getenv("MCP_SERVER_MODE")  # "http" or "stdio"
-    is_docker = os.path.exists("/.dockerenv") or os.getenv("DOCKER_CONTAINER") == "1"
+    # Determine server mode from settings
+    server_mode = settings.MCP_SERVER_MODE
     
-    if explicit_mode == "stdio" or (explicit_mode is None and not is_docker and not sys.stdin.isatty()):
+    if server_mode == "auto":
+        # Auto-detect mode based on environment
+        is_docker = os.path.exists("/.dockerenv") or os.getenv("DOCKER_CONTAINER") == "1"
+        
+        if is_docker or sys.stdin.isatty():
+            # Docker or TTY → HTTP mode
+            server_mode = "http"
+        else:
+            # Pipe stdin → stdio mode (Claude Desktop, etc.)
+            server_mode = "stdio"
+    
+    if server_mode == "stdio":
         # Run in stdio mode for MCP clients (Claude Desktop, LM Studio, etc.)
         logger.info("Starting MCP server in stdio mode")
         run_stdio()
     else:
-        # Run in HTTP mode for Docker deployment or when stdin is TTY
+        # Run in HTTP mode for Docker deployment
         logger.info(f"Starting MCP server in HTTP mode on {settings.MCP_SERVER_HOST}:{settings.MCP_SERVER_PORT}")
         run_http()
 
