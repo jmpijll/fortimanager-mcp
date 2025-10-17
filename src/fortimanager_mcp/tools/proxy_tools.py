@@ -36,18 +36,21 @@ async def list_adoms() -> dict[str, Any]:
 
 @mcp.tool()
 async def get_adom_details(adom: str) -> dict[str, Any]:
-    """Get detailed information about a specific ADOM.
+    """Get detailed statistics and information about a specific ADOM.
+    
+    Shows comprehensive information including device count, policy count, 
+    object statistics, and health status for the specified ADOM.
     
     Args:
         adom: ADOM name
         
     Returns:
-        Dictionary with ADOM details
+        Dictionary with ADOM details and statistics
         
     Example:
         "Tell me about the root ADOM" → get_adom_details(adom="root")
     """
-    return await execute_tool_dynamic("get_adom_details", adom=adom)
+    return await execute_tool_dynamic("get_adom_statistics", adom=adom)
 
 
 # ============================================================================

@@ -25,6 +25,14 @@ class ToolMetadata:
 # Complete registry of all FortiManager MCP tools
 # This is used in dynamic mode to discover and execute tools without loading them all
 TOOL_REGISTRY: dict[str, ToolMetadata] = {
+    # ADOM Management Tools (from device_tools.py)
+    "list_adoms": ToolMetadata(
+        name="list_adoms",
+        module="fortimanager_mcp.tools.device_tools",
+        category="adom",
+        description="List all Administrative Domains (ADOMs) configured in FortiManager",
+        parameters={},
+    ),
     # Device Management Tools (69 tools)
     "list_devices": ToolMetadata(
         name="list_devices",
@@ -115,6 +123,23 @@ TOOL_REGISTRY: dict[str, ToolMetadata] = {
         category="monitoring",
         description="List recent tasks",
         parameters={"limit": {"type": "integer", "optional": True}},
+    ),
+    # ADOM Statistics Tools (from adom_tools.py)
+    "get_adom_statistics": ToolMetadata(
+        name="get_adom_statistics",
+        module="fortimanager_mcp.tools.adom_tools",
+        category="adom",
+        description="Get comprehensive statistics for an ADOM including devices, policies, and objects count",
+        parameters={"adom": {"type": "string", "optional": True}},
+        requires_adom=True,
+    ),
+    "get_adom_health": ToolMetadata(
+        name="get_adom_health",
+        module="fortimanager_mcp.tools.adom_tools",
+        category="adom",
+        description="Get health status of ADOM including all managed devices",
+        parameters={"adom": {"type": "string", "optional": True}},
+        requires_adom=True,
     ),
 }
 

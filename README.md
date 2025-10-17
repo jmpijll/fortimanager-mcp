@@ -148,18 +148,24 @@ The server supports two operational modes for different context window sizes:
 | Mode | Tools Loaded | Context Usage | Best For |
 |------|-------------|---------------|----------|
 | **Full** (default) | All 590 tools | ~118K tokens | Large contexts (200K+) |
-| **Dynamic** | 5 meta-tools + on-demand | ~2K tokens | Small contexts (<200K) |
+| **Dynamic** | ~15 direct proxy tools | ~3K tokens | Small contexts (<200K) |
 
 **Enable Dynamic Mode:**
 ```bash
 # In .env file
 FMG_TOOL_MODE=dynamic
+MCP_SERVER_MODE=auto  # or http/stdio
 
 # Or environment variable
 export FMG_TOOL_MODE=dynamic
 ```
 
-> **98% context reduction** in dynamic mode! See [DYNAMIC_MODE_GUIDE.md](DYNAMIC_MODE_GUIDE.md) for details.
+Dynamic mode provides:
+- **Direct proxy tools** for common operations (list_adoms, list_devices, create_firewall_address, etc.)
+- **Discovery tools** for advanced operations (find_fortimanager_tool, execute_advanced_tool)
+- **Full access** to all 590 FortiManager operations via dynamic loading
+
+> **97% context reduction** in dynamic mode! See [DYNAMIC_MODE_GUIDE.md](DYNAMIC_MODE_GUIDE.md) for details and [SYSTEM_PROMPT.md](SYSTEM_PROMPT.md) for LLM testing.
 
 ### Example Operations
 
