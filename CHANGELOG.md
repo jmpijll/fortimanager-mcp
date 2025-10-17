@@ -5,6 +5,27 @@ All notable changes to the FortiManager MCP Server project will be documented in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Docker health check configuration causing "unhealthy" container status
+  - Added proper HTTP `/health` endpoint for Docker health checks
+  - Fixed attribute access in health endpoint (using `_client` instead of incorrect `session_id`)
+  - Made server resilient to FortiManager connection failures during startup
+  - Container now passes health checks and reports detailed status
+- LM Studio integration via stdio transport
+  - Added automatic stdio mode detection for MCP clients
+  - Server now supports both HTTP (Docker) and stdio (LM Studio/Claude Desktop) modes
+  - Fixed async event loop conflicts in stdio mode
+
+### Added
+- Comprehensive Docker deployment guide (DOCKER_GUIDE.md)
+- LM Studio setup guide (LMSTUDIO_SETUP.md)
+- Build and test helper script (test-container.sh)
+- Enhanced health endpoint with FortiManager connection status reporting
+- Stdio transport support for MCP protocol (enables LM Studio, Claude Desktop, etc.)
+- Automatic transport mode detection (HTTP vs stdio)
+
 ## [0.1.0-beta] - 2025-10-16
 
 ### Initial Beta Release
