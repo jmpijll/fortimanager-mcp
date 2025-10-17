@@ -72,6 +72,12 @@ class Settings(BaseSettings):
         description="MCP server port",
     )
 
+    # Tool Loading Mode
+    FMG_TOOL_MODE: Literal["full", "dynamic"] = Field(
+        default="full",
+        description="Tool loading mode: 'full' loads all tools, 'dynamic' loads meta-tools only",
+    )
+
     # Logging Configuration
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO",

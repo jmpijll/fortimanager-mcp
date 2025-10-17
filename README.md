@@ -141,6 +141,26 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+### Tool Loading Modes
+
+The server supports two operational modes for different context window sizes:
+
+| Mode | Tools Loaded | Context Usage | Best For |
+|------|-------------|---------------|----------|
+| **Full** (default) | All 590 tools | ~118K tokens | Large contexts (200K+) |
+| **Dynamic** | 5 meta-tools + on-demand | ~2K tokens | Small contexts (<200K) |
+
+**Enable Dynamic Mode:**
+```bash
+# In .env file
+FMG_TOOL_MODE=dynamic
+
+# Or environment variable
+export FMG_TOOL_MODE=dynamic
+```
+
+> **98% context reduction** in dynamic mode! See [DYNAMIC_MODE_GUIDE.md](DYNAMIC_MODE_GUIDE.md) for details.
+
 ### Example Operations
 
 **List managed devices:**
@@ -221,6 +241,7 @@ src/fortimanager_mcp/
 ## Documentation
 
 ### Technical Documentation
+- [Dynamic Mode Guide](DYNAMIC_MODE_GUIDE.md) - Context window optimization
 - [Project Status](.notes/PROJECT_STATUS.md) - Current capabilities
 - [API Coverage Map](.notes/api_coverage_map.md) - Detailed coverage
 - [Architecture](.notes/architecture.md) - System design
@@ -241,6 +262,7 @@ src/fortimanager_mcp/
 - [ADR-003: Streamable HTTP Client](.notes/decisions/ADR-003-streamable-http.md)
 - [ADR-004: Integration Testing](.notes/decisions/ADR-004-integration-testing.md)
 - [ADR-005: Tool Categorization](.notes/decisions/ADR-005-tool-categorization.md)
+- [ADR-006: Dynamic Tool Loading](.notes/decisions/ADR-006-dynamic-tool-loading.md)
 
 ## Security Considerations
 

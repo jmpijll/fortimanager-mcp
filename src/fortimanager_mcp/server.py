@@ -74,11 +74,57 @@ def health_check() -> str:
     Returns:
         Health status message
     """
-    return "FortiManager MCP Server is healthy"
+    mode = settings.FMG_TOOL_MODE
+    tool_count = "590 tools" if mode == "full" else "5 meta-tools + 590 on-demand"
+    return f"FortiManager MCP Server is healthy (mode: {mode}, {tool_count})"
 
 
-# Import tools (registers them with the server)
-from fortimanager_mcp.tools import additional_object_tools, advanced_object_tools, device_tools, fortiguard_tools, monitoring_tools, object_tools, policy_tools, provisioning_tools, script_tools, sdwan_tools, security_tools, system_tools, vpn_tools, workspace_tools  # noqa: E402, F401
+# Conditional tool loading based on FMG_TOOL_MODE
+if settings.FMG_TOOL_MODE == "dynamic":
+    # Dynamic mode: Load only meta-tools for discovery and on-demand execution
+    logger.info("Loading in DYNAMIC mode - meta-tools only (5 tools)")
+    logger.info("All 590 FortiManager tools available on-demand via execute_fortimanager_tool()")
+    
+    # Populate the tool registry for dynamic execution
+    from fortimanager_mcp.utils.tool_registry import populate_registry
+    populate_registry()
+    
+    # Import only meta-tools
+    from fortimanager_mcp.tools import meta_tools  # noqa: E402, F401
+    
+else:
+    # Full mode: Load all tools (default behavior)
+    logger.info("Loading in FULL mode - all 590 tools")
+    logger.info("This consumes ~118K tokens for tool definitions")
+    
+    # Import all tool modules (registers them with the server)
+    from fortimanager_mcp.tools import (  # noqa: E402, F401
+        additional_object_tools,
+        adom_tools,
+        advanced_object_tools,
+        connector_tools,
+        csf_tools,
+        dbcache_tools,
+        device_tools,
+        docker_tools,
+        fmgcloud_tools,
+        fortiguard_tools,
+        metafield_tools,
+        monitoring_tools,
+        object_tools,
+        optionattr_tools,
+        policy_tools,
+        provisioning_tools,
+        qos_tools,
+        script_tools,
+        sdwan_tools,
+        security_tools,
+        subfetch_tools,
+        sysproxy_tools,
+        system_tools,
+        vpn_tools,
+        workspace_tools,
+    )
 
 
 def main() -> None:
