@@ -183,3 +183,18 @@ DEPLOYMENT_COMPLETE.md
 .env
 .env.*
 *.env
+
+# Never track API keys
+fortimanagerapikey.txt
+*.apikey
+*.key
+*.pem
+*.p12
+*.bak
+*.backup
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
