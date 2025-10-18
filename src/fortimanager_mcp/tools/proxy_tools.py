@@ -8,10 +8,27 @@ requiring search/discovery steps.
 import logging
 from typing import Any
 
-from fortimanager_mcp.server import mcp
+from fortimanager_mcp.server import mcp, settings
 from fortimanager_mcp.utils.tool_registry import execute_tool_dynamic
 
 logger = logging.getLogger(__name__)
+
+# Determine which tools to register based on mode
+IS_DYNAMIC_MODE = settings.FMG_TOOL_MODE == "dynamic"
+
+
+def conditional_tool(discovery_only: bool = False):
+    """Conditionally apply @mcp.tool() decorator based on mode.
+
+    Args:
+        discovery_only: If True, only register in dynamic mode. If False, register in both modes.
+    """
+    def decorator(func):
+        if not discovery_only or IS_DYNAMIC_MODE:
+            return mcp.tool()(func)
+        else:
+            return func
+    return decorator
 
 
 # ============================================================================
@@ -21,12 +38,12 @@ logger = logging.getLogger(__name__)
 @mcp.tool()
 async def list_adoms() -> dict[str, Any]:
     """List all Administrative Domains (ADOMs) in FortiManager.
-    
+
     Returns all configured ADOMs with their status, version, and settings.
-    
+
     Returns:
         Dictionary with list of ADOMs and their details
-        
+
     Example:
         "Show me all ADOMs" → list_adoms()
         "What ADOMs exist?" → list_adoms()

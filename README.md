@@ -211,6 +211,33 @@ The server implements 100% of documented FortiManager 7.4.8 API operations acros
 
 See [API Coverage Map](.notes/api_coverage_map.md) for detailed breakdown.
 
+## Modes
+
+Set `FMG_TOOL_MODE` in `.env` to control tool loading:
+
+- `full` (default): registers ~590 direct tools
+- `dynamic`: registers only discovery tools and executes all operations dynamically
+
+Dynamic tools available:
+
+- `find_fortimanager_tool(operation: str)`
+- `execute_advanced_tool(tool_name: str, parameters: dict | None = None, kwargs: dict | None = None)`
+- `list_fortimanager_categories()`
+
+Examples (client JSON payloads):
+
+```json
+{ "tool_name": "execute_advanced_tool", "arguments": { "tool_name": "list_devices", "parameters": { "adom": "Loods5" } } }
+```
+
+Health endpoint:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Returns JSON including `fortimanager_connected` and current mode.
+
 ## Development
 
 ### Local Setup

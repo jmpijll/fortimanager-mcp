@@ -146,7 +146,7 @@ class FirewallPolicy(BaseModel):
     service: list[str] | list[dict] = Field(default_factory=list, description="Services")
     action: str | int = Field(default=1, description="Action (0=deny, 1=accept)")
     status: str | int = Field(default=1, description="Status (0=disable, 1=enable)")
-    schedule: str | None = Field(default="always", description="Schedule")
+    schedule: str | list[str] | None = Field(default="always", description="Schedule (can be string or list)")
     comments: str | None = Field(default=None, description="Comments")
     logtraffic: str | int | None = Field(default=None, description="Log traffic setting")
     nat: str | int | None = Field(default=None, description="NAT setting")

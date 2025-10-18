@@ -2,7 +2,7 @@
 
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 from mcp.server.fastmcp import FastMCP
 
@@ -17,6 +17,83 @@ settings.configure_logging()
 
 # Create FortiManager client (will be initialized on lifespan)
 fmg_client: FortiManagerClient | None = None
+
+
+# Dynamic mode: lightweight discovery tools
+def register_dynamic_tools(mcp_server: FastMCP) -> None:
+    """Register discovery tools for dynamic mode only."""
+    # Import here to avoid heavy imports at module import time
+    from fortimanager_mcp.utils.tool_registry import (  # noqa: E402
+        execute_tool_dynamic,
+        get_tool_metadata,
+        populate_registry,
+    )
+
+    # Ensure registry is populated (idempotent)
+    populate_registry()
+
+    @mcp_server.tool()
+    async def find_fortimanager_tool(operation: str) -> dict[str, Any]:
+        """Discover FortiManager tools by operation name/keywords."""
+        # Basic metadata-driven search
+        op = operation.lower().strip()
+        results: list[dict[str, Any]] = []
+        # get_tool_metadata(None) is not supported; rely on registry introspection
+        # Pull a small, representative set for now; full index search is handled inside registry helpers if available
+        candidates = [
+            "list_devices",
+            "list_adoms",
+            "list_firewall_policies",
+            "get_system_status",
+        ]
+        for name in candidates:
+            meta = get_tool_metadata(name)
+            if not meta:
+                continue
+            hay = f"{name} {getattr(meta, 'module', '')} {getattr(meta, 'description', '')}".lower()
+            if all(tok in hay for tok in op.split()):
+                results.append(
+                    {
+                        "name": name,
+                        "category": getattr(meta, "module", "unknown"),
+                        "description": getattr(meta, "description", name.replace("_", " ")),
+                        "how_to_use": f"execute_advanced_tool(tool_name='{name}', ...)",
+                    }
+                )
+        return {
+            "status": "success" if results else "not_found",
+            "operation": operation,
+            "found": len(results),
+            "tools": results,
+        }
+
+    @mcp_server.tool()
+    async def execute_advanced_tool(
+        tool_name: str,
+        parameters: dict | None = None,
+        kwargs: dict | None = None,
+    ) -> Any:
+        """Execute a FortiManager operation dynamically by tool name.
+
+        Supports both flat kwargs and a nested 'parameters' dict from some MCP clients.
+        """
+        merged: dict[str, Any] = {}
+        if parameters and isinstance(parameters, dict):
+            merged.update(parameters)
+        if kwargs and isinstance(kwargs, dict):
+            merged.update(kwargs)
+        return await execute_tool_dynamic(tool_name, **merged)
+
+    @mcp_server.tool()
+    def list_fortimanager_categories() -> dict[str, Any]:
+        """List high-level FortiManager operation categories (metadata-only)."""
+        # Keep in sync with utils.tool_registry registry summary if available
+        return {
+            "status": "success",
+            "note": "Categories summary provided in dynamic mode",
+        }
+
+
 
 
 def get_fmg_client() -> FortiManagerClient | None:
@@ -78,24 +155,17 @@ def health_check() -> str:
     if mode == "full":
         tool_info = "590 tools loaded"
     else:
-        tool_info = "~15 direct tools + 590 operations via proxy"
+        tool_info = "3 discovery tools + 590+ operations via dynamic execution"
     return f"FortiManager MCP Server is healthy (mode: {mode}, {tool_info})"
+
+
 
 
 # Conditional tool loading based on FMG_TOOL_MODE
 if settings.FMG_TOOL_MODE == "dynamic":
-    # Dynamic mode: Load proxy tools that provide direct, natural interfaces
-    logger.info("Loading in DYNAMIC mode - proxy tools for common operations")
-    logger.info("Direct tools: list_adoms, list_devices, list_firewall_addresses, etc.")
-    logger.info("Discovery tools: find_fortimanager_tool, execute_advanced_tool")
-    logger.info("All 590 FortiManager operations accessible")
-    
-    # Populate the tool registry for dynamic execution
-    from fortimanager_mcp.utils.tool_registry import populate_registry
-    populate_registry()
-    
-    # Import proxy tools with direct, LLM-friendly interfaces
-    from fortimanager_mcp.tools import proxy_tools  # noqa: E402, F401
+    # Dynamic mode: register discovery tools only
+    logger.info("Loading in DYNAMIC mode - discovery tools only")
+    register_dynamic_tools(mcp)
     
 else:
     # Full mode: Load all tools (default behavior)

@@ -178,3 +178,8 @@ DEPLOYMENT_COMPLETE.md
 # Docker
 .dockerignore
 
+
+# Ignore env files and backups
+.env
+.env.*
+*.env

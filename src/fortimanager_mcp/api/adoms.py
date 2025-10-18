@@ -4,6 +4,7 @@ from typing import Any
 
 from fortimanager_mcp.api.client import FortiManagerClient
 from fortimanager_mcp.api.models import ADOM
+from fortimanager_mcp.utils.errors import ResourceNotFoundError
 
 
 class ADOMAPI:
@@ -475,16 +476,29 @@ class ADOMAPI:
         adom: str = "root",
     ) -> dict[str, Any]:
         """Get comprehensive statistics for an ADOM.
-        
+
         Args:
             adom: ADOM name
-            
+
         Returns:
             ADOM statistics including devices, policies, objects count
+
+        Note:
+            This endpoint may not be available in all FortiManager versions.
         """
-        url = f"/dvmdb/adom/{adom}/statistics"
-        data = await self.client.get(url)
-        return data if isinstance(data, dict) else {}
+        try:
+            url = f"/dvmdb/adom/{adom}/statistics"
+            data = await self.client.get(url)
+            return data if isinstance(data, dict) else {}
+        except ResourceNotFoundError as e:
+            return {
+                "error": "ADOM statistics endpoint not supported",
+                "message": "This FortiManager version does not support the ADOM statistics endpoint",
+                "adom": adom,
+                "supported_alternatives": ["get_adom_object_statistics", "get_adom_policy_statistics"]
+            }
+        except Exception as e:
+            raise
 
     async def export_adom_configuration(
         self,
@@ -506,32 +520,58 @@ class ADOMAPI:
         adom: str = "root",
     ) -> dict[str, Any]:
         """Get health status of ADOM including all devices.
-        
+
         Args:
             adom: ADOM name
-            
+
         Returns:
             Health status information
+
+        Note:
+            This endpoint may not be available in all FortiManager versions.
         """
-        url = f"/dvmdb/adom/{adom}/health"
-        data = await self.client.get(url)
-        return data if isinstance(data, dict) else {}
+        try:
+            url = f"/dvmdb/adom/{adom}/health"
+            data = await self.client.get(url)
+            return data if isinstance(data, dict) else {}
+        except ResourceNotFoundError as e:
+            return {
+                "error": "ADOM health endpoint not supported",
+                "message": "This FortiManager version does not support the ADOM health status endpoint",
+                "adom": adom,
+                "note": "Use device-specific health checks or system status instead"
+            }
+        except Exception as e:
+            raise
 
     async def get_adom_disk_usage(
         self,
         adom: str = "root",
     ) -> dict[str, Any]:
         """Get disk usage statistics for ADOM data.
-        
+
         Args:
             adom: ADOM name
-            
+
         Returns:
             Disk usage information
+
+        Note:
+            This endpoint may not be available in all FortiManager versions.
         """
-        url = f"/dvmdb/adom/{adom}/disk-usage"
-        data = await self.client.get(url)
-        return data if isinstance(data, dict) else {}
+        try:
+            url = f"/dvmdb/adom/{adom}/disk-usage"
+            data = await self.client.get(url)
+            return data if isinstance(data, dict) else {}
+        except ResourceNotFoundError as e:
+            return {
+                "error": "ADOM disk usage endpoint not supported",
+                "message": "This FortiManager version does not support the ADOM disk usage endpoint",
+                "adom": adom,
+                "note": "Disk usage information may be available through system-level monitoring"
+            }
+        except Exception as e:
+            raise
 
     async def list_adom_templates(
         self,

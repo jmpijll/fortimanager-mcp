@@ -4514,19 +4514,72 @@ async def execute_tool_dynamic(tool_name: str, **kwargs: Any) -> Any:
         raise ValueError(f"Tool '{tool_name}' not found in registry")
 
     try:
-        # Dynamically import the module
-        module = importlib.import_module(metadata.module)
+        # Import the corresponding API module instead of the tool module
+        # Map tool modules to API modules
+        api_module_map = {
+            "device_tools": "devices",
+            "adom_tools": "adoms",
+            "policy_tools": "policies",
+            "object_tools": "objects",
+            "monitoring_tools": "monitoring",
+            "security_tools": "security",
+            "provisioning_tools": "provisioning",
+            "system_tools": "system",
+            "vpn_tools": "vpn",
+            "sdwan_tools": "sdwan",
+            "script_tools": "scripts",
+            "fortiguard_tools": "fortiguard",
+            "workspace_tools": "workspace",
+            "advanced_object_tools": "advanced_objects",
+            "additional_object_tools": "additional_objects",
+            "proxy_tools": None,  # Special case - these are not API-based
+        }
 
-        # Get the tool function
-        tool_func = getattr(module, tool_name, None)
-        if not tool_func:
-            raise RuntimeError(f"Tool function '{tool_name}' not found in module {metadata.module}")
+        api_module_name = api_module_map.get(metadata.module)
+        if not api_module_name:
+            # Fallback to direct tool execution for proxy tools
+            module = importlib.import_module(metadata.module)
+            tool_func = getattr(module, tool_name, None)
+            if not tool_func:
+                raise RuntimeError(f"Tool function '{tool_name}' not found in module {metadata.module}")
+            if inspect.iscoroutinefunction(tool_func):
+                result = await tool_func(**kwargs)
+            else:
+                result = tool_func(**kwargs)
+            return result
 
-        # Execute the tool
-        if inspect.iscoroutinefunction(tool_func):
-            result = await tool_func(**kwargs)
+        # Import the API module
+        api_module = importlib.import_module(f"fortimanager_mcp.api.{api_module_name}")
+
+        # Get the API class (assumes class name follows pattern)
+        api_class_name = f"{api_module_name.title()}API"
+        api_class = getattr(api_module, api_class_name, None)
+        if not api_class:
+            raise RuntimeError(f"API class '{api_class_name}' not found in module {api_module_name}")
+
+        # Initialize the API with client
+        from fortimanager_mcp.api.client import get_fmg_client
+        client = get_fmg_client()
+        if not client:
+            raise RuntimeError("FortiManager client not initialized")
+
+        api_instance = api_class(client)
+
+        # Get the API method (remove 'list_', 'get_', 'create_' prefixes to match API method names)
+        api_method_name = tool_name
+        if tool_name.startswith(('list_', 'get_', 'create_', 'update_', 'delete_')):
+            # API methods typically don't have these prefixes
+            api_method_name = tool_name
+
+        api_method = getattr(api_instance, api_method_name, None)
+        if not api_method:
+            raise RuntimeError(f"API method '{api_method_name}' not found in {api_class_name}")
+
+        # Execute the API method
+        if inspect.iscoroutinefunction(api_method):
+            result = await api_method(**kwargs)
         else:
-            result = tool_func(**kwargs)
+            result = api_method(**kwargs)
 
         return result
 
