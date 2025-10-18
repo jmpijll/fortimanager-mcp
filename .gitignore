@@ -178,3 +178,23 @@ DEPLOYMENT_COMPLETE.md
 # Docker
 .dockerignore
 
+
+# Ignore env files and backups
+.env
+.env.*
+*.env
+
+# Never track API keys
+fortimanagerapikey.txt
+*.apikey
+*.key
+*.pem
+*.p12
+*.bak
+*.backup
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+**/*.env

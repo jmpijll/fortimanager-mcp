@@ -51,6 +51,48 @@ async def get_system_status() -> dict[str, Any]:
 
 
 @mcp.tool()
+async def list_tasks(limit: int | None = None) -> dict[str, Any]:
+    """List FortiManager tasks.
+
+    Retrieves a list of recent tasks such as device installations,
+    policy installations, and other operations.
+
+    Args:
+        limit: Maximum number of tasks to return (optional, defaults to all)
+
+    Returns:
+        Dictionary with list of tasks
+
+    Example:
+        result = list_tasks(limit=10)
+    """
+    try:
+        api = _get_monitoring_api()
+        tasks = await api.list_tasks(limit=limit)
+
+        return {
+            "status": "success",
+            "count": len(tasks),
+            "tasks": [
+                {
+                    "task_id": task.id,
+                    "title": task.title,
+                    "state": task.state,
+                    "progress": task.percent,
+                    "completed": task.num_done,
+                    "total": task.num_lines,
+                    "errors": task.num_err,
+                    "warnings": task.num_warn,
+                }
+                for task in tasks
+            ],
+        }
+    except Exception as e:
+        logger.error(f"Error listing tasks: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+@mcp.tool()
 async def list_recent_tasks(limit: int = 10) -> dict[str, Any]:
     """List recent FortiManager tasks.
 

@@ -141,6 +141,32 @@ Add to `claude_desktop_config.json`:
 }
 ```
 
+### Tool Loading Modes
+
+The server supports two operational modes for different context window sizes:
+
+| Mode | Tools Loaded | Context Usage | Best For |
+|------|-------------|---------------|----------|
+| **Full** (default) | All 590 tools | ~118K tokens | Large contexts (200K+) |
+| **Dynamic** | ~15 direct proxy tools | ~3K tokens | Small contexts (<200K) |
+
+**Enable Dynamic Mode:**
+```bash
+# In .env file
+FMG_TOOL_MODE=dynamic
+MCP_SERVER_MODE=auto  # or http/stdio
+
+# Or environment variable
+export FMG_TOOL_MODE=dynamic
+```
+
+Dynamic mode provides:
+- **Direct proxy tools** for common operations (list_adoms, list_devices, create_firewall_address, etc.)
+- **Discovery tools** for advanced operations (find_fortimanager_tool, execute_advanced_tool)
+- **Full access** to all 590 FortiManager operations via dynamic loading
+
+> **97% context reduction** in dynamic mode! See [DYNAMIC_MODE_GUIDE.md](DYNAMIC_MODE_GUIDE.md) for details and [SYSTEM_PROMPT.md](SYSTEM_PROMPT.md) for LLM testing.
+
 ### Example Operations
 
 **List managed devices:**
@@ -185,6 +211,33 @@ The server implements 100% of documented FortiManager 7.4.8 API operations acros
 
 See [API Coverage Map](.notes/api_coverage_map.md) for detailed breakdown.
 
+## Modes
+
+Set `FMG_TOOL_MODE` in `.env` to control tool loading:
+
+- `full` (default): registers ~590 direct tools
+- `dynamic`: registers only discovery tools and executes all operations dynamically
+
+Dynamic tools available:
+
+- `find_fortimanager_tool(operation: str)`
+- `execute_advanced_tool(tool_name: str, parameters: dict | None = None, kwargs: dict | None = None)`
+- `list_fortimanager_categories()`
+
+Examples (client JSON payloads):
+
+```json
+{ "tool_name": "execute_advanced_tool", "arguments": { "tool_name": "list_devices", "parameters": { "adom": "Loods5" } } }
+```
+
+Health endpoint:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Returns JSON including `fortimanager_connected` and current mode.
+
 ## Development
 
 ### Local Setup
@@ -221,6 +274,7 @@ src/fortimanager_mcp/
 ## Documentation
 
 ### Technical Documentation
+- [Dynamic Mode Guide](DYNAMIC_MODE_GUIDE.md) - Context window optimization
 - [Project Status](.notes/PROJECT_STATUS.md) - Current capabilities
 - [API Coverage Map](.notes/api_coverage_map.md) - Detailed coverage
 - [Architecture](.notes/architecture.md) - System design
@@ -241,6 +295,7 @@ src/fortimanager_mcp/
 - [ADR-003: Streamable HTTP Client](.notes/decisions/ADR-003-streamable-http.md)
 - [ADR-004: Integration Testing](.notes/decisions/ADR-004-integration-testing.md)
 - [ADR-005: Tool Categorization](.notes/decisions/ADR-005-tool-categorization.md)
+- [ADR-006: Dynamic Tool Loading](.notes/decisions/ADR-006-dynamic-tool-loading.md)
 
 ## Security Considerations
 
