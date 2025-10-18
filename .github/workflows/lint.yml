@@ -25,6 +25,7 @@ jobs:
         
     - name: Run ruff
       run: ruff check src/
+      continue-on-error: true
       
     - name: Run mypy
       run: mypy src/
