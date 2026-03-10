@@ -37,6 +37,8 @@ class FortiManagerClient:
         verify_ssl: bool = True,
         timeout: int = 30,
         max_retries: int = 3,
+        forticloud: bool = False,
+        forticloud_client_id: str = "FortiManager",
     ) -> None:
         """Initialize FortiManager client.
 
@@ -48,6 +50,8 @@ class FortiManagerClient:
             verify_ssl: Verify SSL certificates
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts
+            forticloud: Use FortiCloud OAuth flow
+            forticloud_client_id: FortiCloud OAuth client_id
 
         Raises:
             AuthenticationError: If no valid authentication provided
@@ -63,6 +67,8 @@ class FortiManagerClient:
             api_token=api_token,
             username=username,
             password=password,
+            forticloud=forticloud,
+            forticloud_client_id=forticloud_client_id,
         )
 
         # HTTP client (created on connect)
@@ -90,6 +96,8 @@ class FortiManagerClient:
             verify_ssl=settings.FORTIMANAGER_VERIFY_SSL,
             timeout=settings.FORTIMANAGER_TIMEOUT,
             max_retries=settings.FORTIMANAGER_MAX_RETRIES,
+            forticloud=settings.FORTICLOUD_AUTH,
+            forticloud_client_id=settings.FORTICLOUD_CLIENT_ID,
         )
 
     async def connect(self) -> None:
@@ -122,23 +130,25 @@ class FortiManagerClient:
 
     async def disconnect(self) -> None:
         """Disconnect and cleanup resources."""
-        if not self._client:
+        client = self._client
+        if not client:
             return
+
+        self._client = None
 
         logger.info("Disconnecting from FortiManager")
 
         # Logout if using session auth
         if self._session_id:
             try:
-                await self.auth.logout(self._client, self.base_url, self._session_id)
+                await self.auth.logout(client, self.base_url, self._session_id)
             except Exception as e:
                 logger.warning(f"Logout failed: {e}")
             finally:
                 self._session_id = None
 
         # Close HTTP client
-        await self._client.aclose()
-        self._client = None
+        await client.aclose()
         logger.info("Disconnected from FortiManager")
 
     async def __aenter__(self) -> "FortiManagerClient":

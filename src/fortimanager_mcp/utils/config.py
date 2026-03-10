@@ -40,6 +40,17 @@ class Settings(BaseSettings):
         description="FortiManager password (for session-based auth)",
     )
 
+    # FortiCloud OAuth
+    FORTICLOUD_AUTH: bool = Field(
+        default=False,
+        description="Use FortiCloud OAuth flow for authentication",
+    )
+
+    FORTICLOUD_CLIENT_ID: str = Field(
+        default="FortiManager",
+        description="FortiCloud OAuth client_id ('FortiManager' or 'FortiAnalyzer')",
+    )
+
     FORTIMANAGER_VERIFY_SSL: bool = Field(
         default=True,
         description="Verify SSL certificates",
@@ -146,6 +157,15 @@ class Settings(BaseSettings):
         """Check if session-based authentication is configured."""
         return (
             self.FORTIMANAGER_USERNAME is not None
+            and self.FORTIMANAGER_PASSWORD is not None
+        )
+
+    @property
+    def has_forticloud_auth(self) -> bool:
+        """Check if FortiCloud OAuth authentication is configured."""
+        return (
+            self.FORTICLOUD_AUTH
+            and self.FORTIMANAGER_USERNAME is not None
             and self.FORTIMANAGER_PASSWORD is not None
         )
 
